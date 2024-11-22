@@ -1,3 +1,26 @@
+enableStageCarousel = false
+if enableStageCarousel == true then
+NumStages = {}
+NumStages[1] = 5
+NumStages[2] = 3
+NumStages[3] = 3
+NumStages[4] = 3
+NumStages[5] = 3
+NumStages[6] = 3
+StartNumbers = {}
+hoverStages = {}
+x = 0
+totalRows = 0
+for i, stagesNumber in ipairs(NumStages) do
+	StartNumbers[i] = x
+	hoverStages[i] = x + 1
+	--print(NumStages[i])
+	totalRows = totalRows + 1
+    x = x + stagesNumber
+end
+currentStageRow = 0
+end
+
 local col = 1
 local row = 1
 for i = 1, #main.t_selGrid do
@@ -654,6 +677,43 @@ function start.f_selectScreen()
 						motif.select_info.stage_pos[1] + motif.select_info.stage_portrait_offset[1],
 						motif.select_info.stage_pos[2] + motif.select_info.stage_portrait_offset[2]
 					)
+					--print(((stageListNo) % NumStages[1]) + 1)
+					for n = 1, motif.select_info['stage_fp_main_right'] or 0 do
+						main.f_animPosDraw(
+							main.t_selStages[main.t_selectableStages[((stageListNo + n - 1 - StartNumbers[currentStageRow]) % (NumStages[currentStageRow])) + 1 + StartNumbers[currentStageRow]]].anim_data,
+							motif.select_info.stage_pos[1] + motif.select_info.stage_portrait_offset[1] + (n * motif.select_info.stage_spacing[1]),
+							motif.select_info.stage_pos[2] + motif.select_info.stage_portrait_offset[2]
+						)
+					end
+					for n = 1, motif.select_info['stage_fp_main_left'] or 0 do
+						main.f_animPosDraw(
+							main.t_selStages[main.t_selectableStages[((stageListNo - n - 1 - StartNumbers[currentStageRow]) % (NumStages[currentStageRow])) + 1 + StartNumbers[currentStageRow]]].anim_data,
+							motif.select_info.stage_pos[1] + motif.select_info.stage_portrait_offset[1] - (n * motif.select_info.stage_spacing[1]),
+							motif.select_info.stage_pos[2] + motif.select_info.stage_portrait_offset[2]
+						)
+					end
+					for n = 1, motif.select_info['stage_fp_main_up'] or 0 do
+						if currentStageRow - n <= 0 then
+											
+						else
+						main.f_animPosDraw(
+							main.t_selStages[main.t_selectableStages[hoverStages[currentStageRow - n]]].anim_data,
+							motif.select_info.stage_pos[1] + motif.select_info.stage_portrait_offset[1],
+							motif.select_info.stage_pos[2] + motif.select_info.stage_portrait_offset[2] - (n * motif.select_info.stage_spacing[2])
+						)
+						end
+					end
+					for n = 1, motif.select_info['stage_fp_main_down'] or 0 do
+						if currentStageRow + n > totalRows then
+											
+						else
+						main.f_animPosDraw(
+							main.t_selStages[main.t_selectableStages[hoverStages[currentStageRow + n]]].anim_data,
+							motif.select_info.stage_pos[1] + motif.select_info.stage_portrait_offset[1],
+							motif.select_info.stage_pos[2] + motif.select_info.stage_portrait_offset[2] + (n * motif.select_info.stage_spacing[2])
+						)
+						end
+					end
 				end
 				if not stageEnd then
 					if main.f_input(main.t_players, {'pal', 's'}) or timerSelect == -1 then
@@ -735,28 +795,82 @@ end
 --;===========================================================
 function start.f_stageMenu()
 	local n = stageListNo
-	if timerSelect == -1 then
-		stageEnd = true
-		return
-	elseif main.f_input(main.t_players, {'$B'}) then
-		sndPlay(motif.files.snd_data, motif.select_info.stage_move_snd[1], motif.select_info.stage_move_snd[2])
-		stageListNo = stageListNo - 1
-		if stageListNo < 0 then stageListNo = #main.t_selectableStages end
-	elseif main.f_input(main.t_players, {'$F'}) then
-		sndPlay(motif.files.snd_data, motif.select_info.stage_move_snd[1], motif.select_info.stage_move_snd[2])
-		stageListNo = stageListNo + 1
-		if stageListNo > #main.t_selectableStages then stageListNo = 0 end
-	elseif main.f_input(main.t_players, {'$U'}) then
-		sndPlay(motif.files.snd_data, motif.select_info.stage_move_snd[1], motif.select_info.stage_move_snd[2])
-		for i = 1, 10 do
+	if enableStageCarousel == true then
+		if timerSelect == -1 then
+			stageEnd = true
+			return
+		elseif main.f_input(main.t_players, {'$B'}) then
+			if currentStageRow ~= 0 then
+				sndPlay(motif.files.snd_data, motif.select_info.stage_move_snd[1], motif.select_info.stage_move_snd[2])
+				stageListNo = ((stageListNo - 2 - StartNumbers[currentStageRow]) % (NumStages[currentStageRow])) + 1 + StartNumbers[currentStageRow]
+				hoverStages[currentStageRow] = stageListNo
+			end
+			--if stageListNo < 0 then stageListNo = #main.t_selectableStages end
+		elseif main.f_input(main.t_players, {'$F'}) then
+			if currentStageRow ~= 0 then
+				sndPlay(motif.files.snd_data, motif.select_info.stage_move_snd[1], motif.select_info.stage_move_snd[2])
+				stageListNo = ((stageListNo - StartNumbers[currentStageRow]) % (NumStages[currentStageRow])) + 1 + StartNumbers[currentStageRow]
+				print(stageListNo)
+				hoverStages[currentStageRow] = stageListNo
+			end
+			--if stageListNo > #main.t_selectableStages then stageListNo = 0 end
+		elseif main.f_input(main.t_players, {'$U'}) then
+			sndPlay(motif.files.snd_data, motif.select_info.stage_move_snd[1], motif.select_info.stage_move_snd[2])
+			currentStageRow = currentStageRow - 1
+			if currentStageRow == 0 then
+				stageListNo = 0
+			elseif currentStageRow == -1 then
+				currentStageRow = totalRows
+				stageListNo = hoverStages[currentStageRow]
+			else
+				stageListNo = hoverStages[currentStageRow]
+			end
+			--for i = 1, 10 do
+			--	stageListNo = stageListNo - 1
+			--	if stageListNo < 0 then stageListNo = #main.t_selectableStages end
+			--end
+		elseif main.f_input(main.t_players, {'$D'}) then
+			sndPlay(motif.files.snd_data, motif.select_info.stage_move_snd[1], motif.select_info.stage_move_snd[2])
+			--for i = 1, 10 do
+			--	stageListNo = stageListNo + 1
+			--	if stageListNo > #main.t_selectableStages then stageListNo = 0 end
+			--end
+			currentStageRow = currentStageRow + 1
+			if currentStageRow == totalRows + 1 then
+				stageListNo = 0
+				currentStageRow = 0
+			else
+				stageListNo = hoverStages[currentStageRow]
+			end
+		end
+	else
+		if timerSelect == -1 then
+			stageEnd = true
+			return
+		elseif main.f_input(main.t_players, {'$B'}) then
+			sndPlay(motif.files.snd_data, motif.select_info.stage_move_snd[1], motif.select_info.stage_move_snd[2])
 			stageListNo = stageListNo - 1
 			if stageListNo < 0 then stageListNo = #main.t_selectableStages end
-		end
-	elseif main.f_input(main.t_players, {'$D'}) then
-		sndPlay(motif.files.snd_data, motif.select_info.stage_move_snd[1], motif.select_info.stage_move_snd[2])
-		for i = 1, 10 do
+		elseif main.f_input(main.t_players, {'$F'}) then
+			sndPlay(motif.files.snd_data, motif.select_info.stage_move_snd[1], motif.select_info.stage_move_snd[2])
 			stageListNo = stageListNo + 1
 			if stageListNo > #main.t_selectableStages then stageListNo = 0 end
+		elseif main.f_input(main.t_players, {'$U'}) then
+			sndPlay(motif.files.snd_data, motif.select_info.stage_move_snd[1], motif.select_info.stage_move_snd[2])
+			for i = 1, 10 do
+				stageListNo = stageListNo - 1
+				if stageListNo < 0 then stageListNo = #main.t_selectableStages end
+			end
+		elseif main.f_input(main.t_players, {'$D'}) then
+			sndPlay(motif.files.snd_data, motif.select_info.stage_move_snd[1], motif.select_info.stage_move_snd[2])
+			for i = 1, 10 do
+				stageListNo = stageListNo + 1
+				if stageListNo > #main.t_selectableStages then stageListNo = 0 end
+			end
+		end
+		if n ~= stageListNo and stageListNo > 0 then
+			animReset(main.t_selStages[main.t_selectableStages[stageListNo]].anim_data)
+			animUpdate(main.t_selStages[main.t_selectableStages[stageListNo]].anim_data)
 		end
 	end
 	if n ~= stageListNo and stageListNo > 0 then
