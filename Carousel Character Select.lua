@@ -2,11 +2,12 @@ enableStageCarousel = false
 if enableStageCarousel == true then
 NumStages = {}
 NumStages[1] = 5
-NumStages[2] = 3
-NumStages[3] = 3
-NumStages[4] = 3
-NumStages[5] = 3
-NumStages[6] = 3
+NumStages[2] = 19
+NumStages[3] = 4
+NumStages[4] = 4
+--NumStages[4] = 3
+--NumStages[5] = 3
+--NumStages[6] = 3
 StartNumbers = {}
 hoverStages = {}
 x = 0
@@ -20,7 +21,9 @@ for i, stagesNumber in ipairs(NumStages) do
 end
 currentStageRow = 0
 end
-
+if motif.select_info.stage_fp_slide_time == nil then
+	motif.select_info.stage_fp_slide_time = 1
+end
 local col = 1
 local row = 1
 for i = 1, #main.t_selGrid do
@@ -76,6 +79,8 @@ function start.f_selectScreen()
 	charsPerRow = {}
 	charsInRow = {}
 	charsRows = {}
+	stageSlideHor = 0
+	stageSlideVer = 0
 	for i = 1, motif.select_info.rows do
 		charsInRow[i] = {}
 		local rowChars = 0
@@ -164,6 +169,8 @@ function start.f_selectScreen()
 	end
 	slideHor = 0
 	slideVer = 0
+	slideHorDir = 0
+	slideVerDir = 0
 	while not selScreenEnd do
 		counter = counter + 1
 		--credits
@@ -182,6 +189,9 @@ function start.f_selectScreen()
 		for side = 1, 2 do
 			if #start.p[side].t_selTemp > 0 then
 				start.f_drawPortraits(start.p[side].t_selTemp, side, motif.select_info, '_face', true)
+			end
+			if motif.select_info['p' .. side .. '_fp_slide_time'] == nil then
+				motif.select_info['p' .. side .. '_fp_slide_time'] = 1
 			end
 		end
 		--draw cell art
@@ -219,261 +229,111 @@ function start.f_selectScreen()
 			end
 		end]]--
 		for side = 1, 2 do
-			if slideTimeHor[side] > 0 then
-				slideTimeHor[side] = slideTimeHor[side] - 1
-			end
-			if slideTimeVer[side] > 0 then
-				slideTimeVer[side] = slideTimeVer[side] - 1
-			end
-			if ((start.p[side].selEnd == false) and (start.p[side].teamEnd == true)) and (((start.p[1].selEnd and main.cpuSide[2]) or side == 1) or main.cpuSide[2] == false) then
-				local t_cmd = {}
-				if main.coop then
-					--[[for i = 1, config.Players do
-						if not gamemode('versuscoop') or (i - 1) % 2 + 1 == 1 then
-							table.insert(t_cmd, i)
-						end
-					end]]--
-					selectedCounter = 1
-					for c, v in pairs(start.p[side].t_selected) do
-						selectedCounter = selectedCounter + 1
-					end
-					if main.cpuSide[2] == false then
-						if side == 1 then
-							if selectedCounter == 1 then
-								selectedCounter = 1
-							elseif selectedCounter == 2 then
-								selectedCounter = 3
-							elseif selectedCounter == 3 then
-								selectedCounter = 5
-							elseif selectedCounter == 4 then
-								selectedCounter = 7
+			if motif.select_info['p' .. side .. '_fp_main_pos'] ~= nil then
+				if ((start.p[side].selEnd == false) and (start.p[side].teamEnd == true)) and (((start.p[1].selEnd and main.cpuSide[2]) or side == 1) or main.cpuSide[2] == false) then
+					local t_cmd = {}
+					if main.coop then
+						--[[for i = 1, config.Players do
+							if not gamemode('versuscoop') or (i - 1) % 2 + 1 == 1 then
+								table.insert(t_cmd, i)
 							end
-						elseif side == 2 then
-							if selectedCounter == 1 then
-								selectedCounter = 2
-							elseif selectedCounter == 2 then
-								selectedCounter = 4
-							elseif selectedCounter == 3 then
-								selectedCounter = 6
-							elseif selectedCounter == 4 then
-								selectedCounter = 8
+						end]]--
+						selectedCounter = 1
+						for c, v in pairs(start.p[side].t_selected) do
+							selectedCounter = selectedCounter + 1
+						end
+						if main.cpuSide[2] == false then
+							if side == 1 then
+								if selectedCounter == 1 then
+									selectedCounter = 1
+								elseif selectedCounter == 2 then
+									selectedCounter = 3
+								elseif selectedCounter == 3 then
+									selectedCounter = 5
+								elseif selectedCounter == 4 then
+									selectedCounter = 7
+								end
+							elseif side == 2 then
+								if selectedCounter == 1 then
+									selectedCounter = 2
+								elseif selectedCounter == 2 then
+									selectedCounter = 4
+								elseif selectedCounter == 3 then
+									selectedCounter = 6
+								elseif selectedCounter == 4 then
+									selectedCounter = 8
+								end
 							end
 						end
+						t_cmd = {selectedCounter}
+						if selectedCounter > 1 then
+							start.c[selectedCounter].selY = start.c[side].selY
+							start.c[selectedCounter].selX = start.c[side].selX
+						end
+					else
+						selectedCounter = 1
+						t_cmd = {side}
 					end
-					t_cmd = {selectedCounter}
-					if selectedCounter > 1 then
-						start.c[selectedCounter].selY = start.c[side].selY
-						start.c[selectedCounter].selX = start.c[side].selX
+					moved = false
+					if main.f_input(t_cmd, main.f_extractKeys('$U')) then
+						start.c[side].trueY = ((start.c[side].trueY - 2) % numberOfRows) + 1
+						start.c[side].selY = charsRows[start.c[side].trueY] - 1	
+						start.c[side].trueX = hoverCharacters[side][start.c[side].selY + 1]
+						start.c[side].selX = charsInRow[start.c[side].selY + 1][hoverCharacters[side][start.c[side].selY + 1]] - 1
+						slideVer = -1
+						slideTimeVer[side] = motif.select_info['p' .. side .. '_fp_slide_time']
+						moved = true
 					end
-				else
-					selectedCounter = 1
-					t_cmd = {side}
-				end
-				moved = false
-				if main.f_input(t_cmd, main.f_extractKeys('$U')) then
-					start.c[side].trueY = ((start.c[side].trueY - 2) % numberOfRows) + 1
-					start.c[side].selY = charsRows[start.c[side].trueY] - 1	
-					start.c[side].trueX = hoverCharacters[side][start.c[side].selY + 1]
-					start.c[side].selX = charsInRow[start.c[side].selY + 1][hoverCharacters[side][start.c[side].selY + 1]] - 1
-					slideVer = -1
-					slideTimeVer[side] = motif.select_info['p' .. side .. '_fp_slide_time'] or 50
-					moved = true
-				end
-				if main.f_input(t_cmd, main.f_extractKeys('$D')) then
-					start.c[side].trueY = (start.c[side].trueY % numberOfRows) + 1
-					start.c[side].selY = charsRows[start.c[side].trueY] - 1	
-					start.c[side].trueX = hoverCharacters[side][start.c[side].selY + 1]
-					start.c[side].selX = charsInRow[start.c[side].selY + 1][hoverCharacters[side][start.c[side].selY + 1]] - 1
-					slideVer = 1
-					slideTimeVer[side] = motif.select_info['p' .. side .. '_fp_slide_time'] or 50
-					moved = true
+					if main.f_input(t_cmd, main.f_extractKeys('$D')) then
+						start.c[side].trueY = (start.c[side].trueY % numberOfRows) + 1
+						start.c[side].selY = charsRows[start.c[side].trueY] - 1	
+						start.c[side].trueX = hoverCharacters[side][start.c[side].selY + 1]
+						start.c[side].selX = charsInRow[start.c[side].selY + 1][hoverCharacters[side][start.c[side].selY + 1]] - 1
+						slideVer = 1
+						slideTimeVer[side] = motif.select_info['p' .. side .. '_fp_slide_time']
+						moved = true
+					end
+					
+					if main.f_input(t_cmd, main.f_extractKeys('$F')) then
+						start.c[side].trueX = ((start.c[side].trueX) % charsPerRow[start.c[side].selY + 1]) + 1
+						start.c[side].selX = charsInRow[start.c[side].selY + 1][start.c[side].trueX] - 1
+						hoverCharacters[side][start.c[side].selY + 1] = start.c[side].trueX
+						slideHor = 1
+						slideTimeHor[side] = motif.select_info['p' .. side .. '_fp_slide_time']
+						moved = true
+					end		
+					if main.f_input(t_cmd, main.f_extractKeys('$B')) then
+						start.c[side].trueX = ((start.c[side].trueX - 2) % charsPerRow[start.c[side].selY + 1]) + 1
+						start.c[side].selX = charsInRow[start.c[side].selY + 1][start.c[side].trueX] - 1
+						hoverCharacters[side][start.c[side].selY + 1] = start.c[side].trueX		
+						slideHor = -1
+						slideTimeHor[side] = motif.select_info['p' .. side .. '_fp_slide_time']
+						moved = true
+					end
+					if moved == true then
+						sndPlay(motif.files.snd_data, motif.select_info['p' .. side .. '_cursor_move_snd'][1], motif.select_info['p' .. side .. '_cursor_move_snd'][2])
+					end
 				end
 				
-				if main.f_input(t_cmd, main.f_extractKeys('$F')) then
-					start.c[side].trueX = ((start.c[side].trueX) % charsPerRow[start.c[side].selY + 1]) + 1
-					start.c[side].selX = charsInRow[start.c[side].selY + 1][start.c[side].trueX] - 1
-					hoverCharacters[side][start.c[side].selY + 1] = start.c[side].trueX
-					slideHor = 1
-					slideTimeHor[side] = motif.select_info['p' .. side .. '_fp_slide_time'] or 50
-					moved = true
-				end		
-				if main.f_input(t_cmd, main.f_extractKeys('$B')) then
-					start.c[side].trueX = ((start.c[side].trueX - 2) % charsPerRow[start.c[side].selY + 1]) + 1
-					start.c[side].selX = charsInRow[start.c[side].selY + 1][start.c[side].trueX] - 1
-					hoverCharacters[side][start.c[side].selY + 1] = start.c[side].trueX		
-					slideHor = -1
-					slideTimeHor[side] = motif.select_info['p' .. side .. '_fp_slide_time'] or 50
-					moved = true
+				
+				if slideTimeHor[side] > 0 then
+					slideTimeHor[side] = slideTimeHor[side] - 1
 				end
-				if moved == true then
-					sndPlay(motif.files.snd_data, motif.select_info['p' .. side .. '_cursor_move_snd'][1], motif.select_info['p' .. side .. '_cursor_move_snd'][2])
+				if slideTimeVer[side] > 0 then
+					slideTimeVer[side] = slideTimeVer[side] - 1
 				end
-			end
-			if start.p[side].teamEnd == true and (((start.p[side].selEnd == false) and (start.p[side].teamEnd == true)) or (motif.select_info.hideoncompleteselection == 0)) and (((start.p[1].selEnd and main.cpuSide[2]) or side == 1) or main.cpuSide[2] == false) then
-				--vertical showcase
-				for n = 1, motif.select_info['p' .. side .. '_fp_up'] or 0 do
-					main.f_animPosDraw(
-						motif.select_info.cell_bg_data,
-						motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[1][1] * n),
-						motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[1][2] * n) + (slideVer * ((spacing[2][2]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeVer[side])),
-						(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
-					)
-					--print(charsInRow[charsRows[((start.c[side].trueY - 1 - 1) % numberOfRows) + 1]][hoverCharacters[side][charsRows[((start.c[side].trueY - 1 - 1) % numberOfRows) + 1]]])
-					--local t = start.t_grid[((start.c[side].selY - n) % numberOfRows) + 1][hoverCharacters[side][((start.c[side].selY - n) % motif.select_info.rows) + 1]]
-					local t = start.t_grid[charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]][charsInRow[charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]][hoverCharacters[side][charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]]]]
-					animSetScale(
-						start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
-						(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
-						(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
-						false
-					)
-					main.f_animPosDraw(
-						start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
-						motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[1][1] * n),
-						motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[1][2] * n) + (slideVer * ((spacing[2][2]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeVer[side])),
-						(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
-					)
-					for h = 1, motif.select_info['p' .. side .. '_fp_up_' .. n .. '_right'] or 0 do
-						if charsPerRow[charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]] > h then
-							main.f_animPosDraw(
-								motif.select_info.cell_bg_data,
-								motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[1][1] * n) + (spacing[4][1] * h),
-								motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[1][2] * n) + (spacing[4][2] * h),
-								(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
-							)
-							precalc = charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]
-							local t = start.t_grid[precalc][charsInRow[precalc][((hoverCharacters[side][precalc] + h - 1) % charsPerRow[precalc]) + 1]]
-							main.f_animPosDraw(
-								start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
-								motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[1][1] * n) + (spacing[4][1] * h),
-								motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[1][2] * n) + (spacing[4][2] * h),
-								(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
-							)
-						end
-					end
-					for h = 1, motif.select_info['p' .. side .. '_fp_up_' .. n .. '_left'] or 0 do
-						if charsPerRow[charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]] > h then
-							main.f_animPosDraw(
-								motif.select_info.cell_bg_data,
-								motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[1][1] * n) + (spacing[3][1] * h),
-								motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[1][2] * n) + (spacing[3][2] * h),
-								(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
-							)
-							precalc = charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]
-							local t = start.t_grid[precalc][charsInRow[precalc][((hoverCharacters[side][precalc] - h - 1) % charsPerRow[precalc]) + 1]]
-							main.f_animPosDraw(
-								start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
-								motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[1][1] * n) + (spacing[3][1] * h),
-								motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[1][2] * n) + (spacing[3][2] * h),
-								(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
-							)
-						end
-					end
-				end
-				for n = 1, motif.select_info['p' .. side .. '_fp_down'] or 0 do
-					main.f_animPosDraw(
-						motif.select_info.cell_bg_data,
-						motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[2][1] * n),
-						motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[2][2] * n) + (slideVer * ((spacing[2][2]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeVer[side])),
-						(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
-					)
-					local t = start.t_grid[charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]][charsInRow[charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]][hoverCharacters[side][charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]]]]
-					animSetScale(
-						start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
-						(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
-						(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
-						false
-					)
-					main.f_animPosDraw(
-						start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
-						motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[2][1] * n),
-						motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[2][2] * n) + (slideVer * ((spacing[2][2]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeVer[side])),
-						(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
-					)
-					for h = 1, motif.select_info['p' .. side .. '_fp_down_' .. n .. '_right'] or 0 do
-						--if charsPerRow[((start.c[side].selY + n) % numberOfRows) + 1] > h then
-						if charsPerRow[charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]] > h then
-							main.f_animPosDraw(
-								motif.select_info.cell_bg_data,
-								motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[2][1] * n) + (spacing[4][1] * h),
-								motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[2][2] * n) + (spacing[4][2] * h),
-								(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
-							)
-							--precalc = charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]
-							--precalc = ((hoverCharacters[side][((start.c[side].selY + n) % numberOfRows) + 1]) + h) % charsPerRow[((start.c[side].selY + n) % numberOfRows) + 1]
-							--if precalc == 0 then
-							--	precalc = charsPerRow[((start.c[side].selY + n) % numberOfRows) + 1]
-							--end
-							precalc = charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]
-							local t = start.t_grid[precalc][charsInRow[precalc][((hoverCharacters[side][precalc] + h - 1) % charsPerRow[precalc]) + 1]]
-							
-							--local t = start.t_grid[((start.c[side].selY + n) % numberOfRows) + 1][charsInRow[precalc][((hoverCharacters[side][precalc] + h - 1) % charsPerRow[precalc]) + 1]]
-							main.f_animPosDraw(
-								start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
-								motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[2][1] * n) + (spacing[4][1] * h),
-								motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[2][2] * n) + (spacing[4][2] * h),
-								(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
-							)
-						end
-					end
-					for h = 1, motif.select_info['p' .. side .. '_fp_down_' .. n .. '_left'] or 0 do
-						if charsPerRow[charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]] > h then
-						--if charsPerRow[((start.c[side].selY + n) % numberOfRows) + 1] > h then
-							main.f_animPosDraw(
-								motif.select_info.cell_bg_data,
-								motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[2][1] * n) + (spacing[3][1] * h),
-								motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[2][2] * n) + (spacing[3][2] * h),
-								(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
-							)
-							--precalc = ((hoverCharacters[side][((start.c[side].selY + n) % numberOfRows) + 1]) - h) % charsPerRow[((start.c[side].selY + n) % numberOfRows) + 1]
-							--if precalc == 0 then
-							--	precalc = charsPerRow[((start.c[side].selY + n) % numberOfRows) + 1]
-							--end
-							--local t = start.t_grid[((start.c[side].selY + n) % numberOfRows) + 1][precalc]
-							precalc = charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]
-							local t = start.t_grid[precalc][charsInRow[precalc][((hoverCharacters[side][precalc] - h - 1) % charsPerRow[precalc]) + 1]]
-							main.f_animPosDraw(
-								start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
-								motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[2][1] * n) + (spacing[3][1] * h),
-								motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[2][2] * n) + (spacing[3][2] * h),
-								(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
-							)
-						end
-					end
-				end
-				--horizontal displays
-				for n = 1, motif.select_info['p' .. side .. '_fp_main_right'] or 0 do
-					if charsPerRow[start.c[side].selY + 1] > n then
+				if start.p[side].teamEnd == true and (((start.p[side].selEnd == false) and (start.p[side].teamEnd == true)) or (motif.select_info.hideoncompleteselection == 0)) and (((start.p[1].selEnd and main.cpuSide[2]) or side == 1) or main.cpuSide[2] == false) then
+					--vertical showcase
+					for n = 1, motif.select_info['p' .. side .. '_fp_up'] or 0 do
 						main.f_animPosDraw(
 							motif.select_info.cell_bg_data,
-							motif.select_info['p' .. side .. '_fp_main_pos'][1] + (n * spacing[4][1])  + (slideHor * ((spacing[4][1]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeHor[side])),
-							motif.select_info['p' .. side .. '_fp_main_pos'][2] + (n * spacing[4][2]),
+							motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[1][1] * n),
+							motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[1][2] * n) + (slideVer * ((spacing[2][2]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeVer[side])),
 							(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
 						)
-						local t = start.t_grid[start.c[side].selY + 1][charsInRow[start.c[side].selY + 1][((start.c[side].trueX + n - 1) % charsPerRow[start.c[side].selY + 1]) + 1]]
-						animSetScale(
-							start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
-							(motif.select_info.portrait_scale[1] * ((start.f_getCharData(t.char_ref).portrait_scale or 1) or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
-							(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
-							false
-						)
-						main.f_animPosDraw(
-							start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
-							motif.select_info['p' .. side .. '_fp_main_pos'][1] + (n * spacing[4][1])  + (slideHor * ((spacing[4][1]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeHor[side])),
-							motif.select_info['p' .. side .. '_fp_main_pos'][2] + (n * spacing[4][2]),
-							(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
-						)		
-					end
-				end
-				for n = 1, motif.select_info['p' .. side .. '_fp_main_left'] or 0 do
-					if charsPerRow[start.c[side].selY + 1] > n then
-						main.f_animPosDraw(
-							motif.select_info.cell_bg_data,
-							motif.select_info['p' .. side .. '_fp_main_pos'][1] + (n * spacing[3][1])   + (slideHor * ((spacing[4][1]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeHor[side])),
-							motif.select_info['p' .. side .. '_fp_main_pos'][2] + (n * spacing[3][2]),
-							(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
-						)
-						local t = start.t_grid[start.c[side].selY + 1][charsInRow[start.c[side].selY + 1][((start.c[side].trueX - n - 1) % charsPerRow[start.c[side].selY + 1]) + 1]]
+						--print(charsInRow[charsRows[((start.c[side].trueY - 1 - 1) % numberOfRows) + 1]][hoverCharacters[side][charsRows[((start.c[side].trueY - 1 - 1) % numberOfRows) + 1]]])
+						--local t = start.t_grid[((start.c[side].selY - n) % numberOfRows) + 1][hoverCharacters[side][((start.c[side].selY - n) % motif.select_info.rows) + 1]]
+						local t = start.t_grid[charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]][charsInRow[charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]][hoverCharacters[side][charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]]]]
 						animSetScale(
 							start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
 							(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
@@ -482,53 +342,207 @@ function start.f_selectScreen()
 						)
 						main.f_animPosDraw(
 							start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
-							motif.select_info['p' .. side .. '_fp_main_pos'][1] + (n * spacing[3][1]) + (slideHor * ((spacing[4][1]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeHor[side])),
-							motif.select_info['p' .. side .. '_fp_main_pos'][2] + (n * spacing[3][2]),
+							motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[1][1] * n),
+							motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[1][2] * n) + (slideVer * ((spacing[2][2]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeVer[side])),
 							(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
-						)		
+						)
+						for h = 1, motif.select_info['p' .. side .. '_fp_up_' .. n .. '_right'] or 0 do
+							if charsPerRow[charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]] > h then
+								main.f_animPosDraw(
+									motif.select_info.cell_bg_data,
+									motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[1][1] * n) + (spacing[4][1] * h),
+									motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[1][2] * n) + (spacing[4][2] * h),
+									(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
+								)
+								precalc = charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]
+								local t = start.t_grid[precalc][charsInRow[precalc][((hoverCharacters[side][precalc] + h - 1) % charsPerRow[precalc]) + 1]]
+								main.f_animPosDraw(
+									start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
+									motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[1][1] * n) + (spacing[4][1] * h),
+									motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[1][2] * n) + (spacing[4][2] * h),
+									(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
+								)
+							end
+						end
+						for h = 1, motif.select_info['p' .. side .. '_fp_up_' .. n .. '_left'] or 0 do
+							if charsPerRow[charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]] > h then
+								main.f_animPosDraw(
+									motif.select_info.cell_bg_data,
+									motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[1][1] * n) + (spacing[3][1] * h),
+									motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[1][2] * n) + (spacing[3][2] * h),
+									(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
+								)
+								precalc = charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]
+								local t = start.t_grid[precalc][charsInRow[precalc][((hoverCharacters[side][precalc] - h - 1) % charsPerRow[precalc]) + 1]]
+								main.f_animPosDraw(
+									start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
+									motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[1][1] * n) + (spacing[3][1] * h),
+									motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[1][2] * n) + (spacing[3][2] * h),
+									(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
+								)
+							end
+						end
 					end
+					for n = 1, motif.select_info['p' .. side .. '_fp_down'] or 0 do
+						main.f_animPosDraw(
+							motif.select_info.cell_bg_data,
+							motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[2][1] * n),
+							motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[2][2] * n) + (slideVer * ((spacing[2][2]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeVer[side])),
+							(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
+						)
+						local t = start.t_grid[charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]][charsInRow[charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]][hoverCharacters[side][charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]]]]
+						animSetScale(
+							start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
+							(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
+							(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
+							false
+						)
+						main.f_animPosDraw(
+							start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
+							motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[2][1] * n),
+							motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[2][2] * n) + (slideVer * ((spacing[2][2]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeVer[side])),
+							(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
+						)
+						for h = 1, motif.select_info['p' .. side .. '_fp_down_' .. n .. '_right'] or 0 do
+							--if charsPerRow[((start.c[side].selY + n) % numberOfRows) + 1] > h then
+							if charsPerRow[charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]] > h then
+								main.f_animPosDraw(
+									motif.select_info.cell_bg_data,
+									motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[2][1] * n) + (spacing[4][1] * h),
+									motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[2][2] * n) + (spacing[4][2] * h),
+									(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
+								)
+								--precalc = charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]
+								--precalc = ((hoverCharacters[side][((start.c[side].selY + n) % numberOfRows) + 1]) + h) % charsPerRow[((start.c[side].selY + n) % numberOfRows) + 1]
+								--if precalc == 0 then
+								--	precalc = charsPerRow[((start.c[side].selY + n) % numberOfRows) + 1]
+								--end
+								precalc = charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]
+								local t = start.t_grid[precalc][charsInRow[precalc][((hoverCharacters[side][precalc] + h - 1) % charsPerRow[precalc]) + 1]]
+								
+								--local t = start.t_grid[((start.c[side].selY + n) % numberOfRows) + 1][charsInRow[precalc][((hoverCharacters[side][precalc] + h - 1) % charsPerRow[precalc]) + 1]]
+								main.f_animPosDraw(
+									start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
+									motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[2][1] * n) + (spacing[4][1] * h),
+									motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[2][2] * n) + (spacing[4][2] * h),
+									(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
+								)
+							end
+						end
+						for h = 1, motif.select_info['p' .. side .. '_fp_down_' .. n .. '_left'] or 0 do
+							if charsPerRow[charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]] > h then
+							--if charsPerRow[((start.c[side].selY + n) % numberOfRows) + 1] > h then
+								main.f_animPosDraw(
+									motif.select_info.cell_bg_data,
+									motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[2][1] * n) + (spacing[3][1] * h),
+									motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[2][2] * n) + (spacing[3][2] * h),
+									(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
+								)
+								--precalc = ((hoverCharacters[side][((start.c[side].selY + n) % numberOfRows) + 1]) - h) % charsPerRow[((start.c[side].selY + n) % numberOfRows) + 1]
+								--if precalc == 0 then
+								--	precalc = charsPerRow[((start.c[side].selY + n) % numberOfRows) + 1]
+								--end
+								--local t = start.t_grid[((start.c[side].selY + n) % numberOfRows) + 1][precalc]
+								precalc = charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]
+								local t = start.t_grid[precalc][charsInRow[precalc][((hoverCharacters[side][precalc] - h - 1) % charsPerRow[precalc]) + 1]]
+								main.f_animPosDraw(
+									start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
+									motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[2][1] * n) + (spacing[3][1] * h),
+									motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[2][2] * n) + (spacing[3][2] * h),
+									(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
+								)
+							end
+						end
+					end
+					--horizontal displays
+					for n = 1, motif.select_info['p' .. side .. '_fp_main_right'] or 0 do
+						if charsPerRow[start.c[side].selY + 1] > n then
+							main.f_animPosDraw(
+								motif.select_info.cell_bg_data,
+								motif.select_info['p' .. side .. '_fp_main_pos'][1] + (n * spacing[4][1])  + (slideHor * ((spacing[4][1]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeHor[side])),
+								motif.select_info['p' .. side .. '_fp_main_pos'][2] + (n * spacing[4][2]),
+								(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
+							)
+							local t = start.t_grid[start.c[side].selY + 1][charsInRow[start.c[side].selY + 1][((start.c[side].trueX + n - 1) % charsPerRow[start.c[side].selY + 1]) + 1]]
+							animSetScale(
+								start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
+								(motif.select_info.portrait_scale[1] * ((start.f_getCharData(t.char_ref).portrait_scale or 1) or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
+								(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
+								false
+							)
+							main.f_animPosDraw(
+								start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
+								motif.select_info['p' .. side .. '_fp_main_pos'][1] + (n * spacing[4][1])  + (slideHor * ((spacing[4][1]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeHor[side])),
+								motif.select_info['p' .. side .. '_fp_main_pos'][2] + (n * spacing[4][2]),
+								(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
+							)		
+						end
+					end
+					for n = 1, motif.select_info['p' .. side .. '_fp_main_left'] or 0 do
+						if charsPerRow[start.c[side].selY + 1] > n then
+							main.f_animPosDraw(
+								motif.select_info.cell_bg_data,
+								motif.select_info['p' .. side .. '_fp_main_pos'][1] + (n * spacing[3][1])   + (slideHor * ((spacing[4][1]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeHor[side])),
+								motif.select_info['p' .. side .. '_fp_main_pos'][2] + (n * spacing[3][2]),
+								(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
+							)
+							local t = start.t_grid[start.c[side].selY + 1][charsInRow[start.c[side].selY + 1][((start.c[side].trueX - n - 1) % charsPerRow[start.c[side].selY + 1]) + 1]]
+							animSetScale(
+								start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
+								(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
+								(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
+								false
+							)
+							main.f_animPosDraw(
+								start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
+								motif.select_info['p' .. side .. '_fp_main_pos'][1] + (n * spacing[3][1]) + (slideHor * ((spacing[4][1]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeHor[side])),
+								motif.select_info['p' .. side .. '_fp_main_pos'][2] + (n * spacing[3][2]),
+								(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
+							)		
+						end
+					end
+					
+					--main display
+					scaleToUse = {}
+					if motif.select_info['p' .. side .. '_fp_main_scale'] ~= nil then
+						scaleToUse[1] = motif.select_info['p' .. side .. '_fp_main_scale'][1]
+						scaleToUse[2] = motif.select_info['p' .. side .. '_fp_main_scale'][2]
+					else
+						scaleToUse[1] = 1
+						scaleToUse[2] = 1
+					end
+					animSetScale(
+						motif.select_info.cell_bg_data,
+						scaleToUse[1],
+						scaleToUse[2],
+						false
+					)
+					main.f_animPosDraw(
+						motif.select_info.cell_bg_data,
+						motif.select_info['p' .. side .. '_fp_main_pos'][1] - (((motif.select_info['cell_size'][1] * scaleToUse[1]) - motif.select_info['cell_size'][1]) / 2) + (slideHor * ((spacing[4][1]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeHor[side])),
+						motif.select_info['p' .. side .. '_fp_main_pos'][2] - (((motif.select_info['cell_size'][2] * scaleToUse[2]) - motif.select_info['cell_size'][2]) / 2) + (slideVer * ((spacing[2][2]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeVer[side])),
+						(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
+					)
+					animSetScale(
+						motif.select_info.cell_bg_data,
+						1,
+						1,
+						false
+					)
+					local t = start.t_grid[start.c[side].selY + 1][start.c[side].selX + 1]
+					animSetScale(
+						start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
+						(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * scaleToUse[1],
+						(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * scaleToUse[2],
+						false
+					)
+					main.f_animPosDraw(
+						start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
+						motif.select_info['p' .. side .. '_fp_main_pos'][1] - (((motif.select_info['cell_size'][1] * scaleToUse[1]) - motif.select_info['cell_size'][1]) / 2)  + (slideHor * ((spacing[4][1]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeHor[side])),
+						motif.select_info['p' .. side .. '_fp_main_pos'][2] - (((motif.select_info['cell_size'][2] * scaleToUse[2]) - motif.select_info['cell_size'][2]) / 2) + (slideVer * ((spacing[2][2]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeVer[side])),
+						(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
+					)	
 				end
-				
-				--main display
-				scaleToUse = {}
-				if motif.select_info['p' .. side .. '_fp_main_scale'] ~= nil then
-					scaleToUse[1] = motif.select_info['p' .. side .. '_fp_main_scale'][1]
-					scaleToUse[2] = motif.select_info['p' .. side .. '_fp_main_scale'][2]
-				else
-					scaleToUse[1] = 1
-					scaleToUse[2] = 1
-				end
-				animSetScale(
-					motif.select_info.cell_bg_data,
-					scaleToUse[1],
-					scaleToUse[2],
-					false
-				)
-				main.f_animPosDraw(
-					motif.select_info.cell_bg_data,
-					motif.select_info['p' .. side .. '_fp_main_pos'][1] - (((motif.select_info['cell_size'][1] * scaleToUse[1]) - motif.select_info['cell_size'][1]) / 2) + (slideHor * ((spacing[4][1]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeHor[side])),
-					motif.select_info['p' .. side .. '_fp_main_pos'][2] - (((motif.select_info['cell_size'][2] * scaleToUse[2]) - motif.select_info['cell_size'][2]) / 2) + (slideVer * ((spacing[2][2]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeVer[side])),
-					(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
-				)
-				animSetScale(
-					motif.select_info.cell_bg_data,
-					1,
-					1,
-					false
-				)
-				local t = start.t_grid[start.c[side].selY + 1][start.c[side].selX + 1]
-				animSetScale(
-					start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
-					(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * scaleToUse[1],
-					(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * scaleToUse[2],
-					false
-				)
-				main.f_animPosDraw(
-					start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
-					motif.select_info['p' .. side .. '_fp_main_pos'][1] - (((motif.select_info['cell_size'][1] * scaleToUse[1]) - motif.select_info['cell_size'][1]) / 2)  + (slideHor * ((spacing[4][1]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeHor[side])),
-					motif.select_info['p' .. side .. '_fp_main_pos'][2] - (((motif.select_info['cell_size'][2] * scaleToUse[2]) - motif.select_info['cell_size'][2]) / 2) + (slideVer * ((spacing[2][2]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeVer[side])),
-					(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
-				)	
 			end
 		end
 		prefix = 'p1_cursor_active'
@@ -663,102 +677,197 @@ function start.f_selectScreen()
 			elseif start.p[1].screenDelay <= 0 and start.p[2].screenDelay <= 0 and main.fadeType == 'fadein' then
 				main.f_fadeReset('fadeout', motif.select_info)
 			end
+			if stageSlideHor > 0 then
+				stageSlideHor = stageSlideHor - 1
+			end
+			if stageSlideVer > 0 then
+				stageSlideVer = stageSlideVer - 1
+			end
 			--draw stage portrait
 			if main.stageMenu then
-				--draw stage portrait background
-				main.f_animPosDraw(motif.select_info.stage_portrait_bg_data)
-				--draw stage portrait (random)
-				if stageListNo == 0 then
-					main.f_animPosDraw(motif.select_info.stage_portrait_random_data)
-				--draw stage portrait loaded from stage SFF
-				else
-					main.f_animPosDraw(
-						main.t_selStages[main.t_selectableStages[stageListNo]].anim_data,
-						motif.select_info.stage_pos[1] + motif.select_info.stage_portrait_offset[1],
-						motif.select_info.stage_pos[2] + motif.select_info.stage_portrait_offset[2]
-					)
-					--print(((stageListNo) % NumStages[1]) + 1)
-					for n = 1, motif.select_info['stage_fp_main_right'] or 0 do
+				if enableStageCarousel == true then
+					--draw stage portrait background
+					main.f_animPosDraw(motif.select_info.stage_portrait_bg_data)
+					--draw stage portrait (random)
+					if stageListNo == 0 then
 						main.f_animPosDraw(
-							main.t_selStages[main.t_selectableStages[((stageListNo + n - 1 - StartNumbers[currentStageRow]) % (NumStages[currentStageRow])) + 1 + StartNumbers[currentStageRow]]].anim_data,
-							motif.select_info.stage_pos[1] + motif.select_info.stage_portrait_offset[1] + (n * motif.select_info.stage_spacing[1]),
-							motif.select_info.stage_pos[2] + motif.select_info.stage_portrait_offset[2]
+							motif.select_info.stage_portrait_random_data,
+							0,
+							0
 						)
-					end
-					for n = 1, motif.select_info['stage_fp_main_left'] or 0 do
-						main.f_animPosDraw(
-							main.t_selStages[main.t_selectableStages[((stageListNo - n - 1 - StartNumbers[currentStageRow]) % (NumStages[currentStageRow])) + 1 + StartNumbers[currentStageRow]]].anim_data,
-							motif.select_info.stage_pos[1] + motif.select_info.stage_portrait_offset[1] - (n * motif.select_info.stage_spacing[1]),
-							motif.select_info.stage_pos[2] + motif.select_info.stage_portrait_offset[2]
-						)
-					end
-					for n = 1, motif.select_info['stage_fp_main_up'] or 0 do
-						if currentStageRow - n <= 0 then
-											
-						else
-						main.f_animPosDraw(
-							main.t_selStages[main.t_selectableStages[hoverStages[currentStageRow - n]]].anim_data,
-							motif.select_info.stage_pos[1] + motif.select_info.stage_portrait_offset[1],
-							motif.select_info.stage_pos[2] + motif.select_info.stage_portrait_offset[2] - (n * motif.select_info.stage_spacing[2])
-						)
-						end
-					end
-					for n = 1, motif.select_info['stage_fp_main_down'] or 0 do
-						if currentStageRow + n > totalRows then
-											
-						else
-						main.f_animPosDraw(
-							main.t_selStages[main.t_selectableStages[hoverStages[currentStageRow + n]]].anim_data,
-							motif.select_info.stage_pos[1] + motif.select_info.stage_portrait_offset[1],
-							motif.select_info.stage_pos[2] + motif.select_info.stage_portrait_offset[2] + (n * motif.select_info.stage_spacing[2])
-						)
-						end
-					end
-				end
-				if not stageEnd then
-					if main.f_input(main.t_players, {'pal', 's'}) or timerSelect == -1 then
-						sndPlay(motif.files.snd_data, motif.select_info.stage_done_snd[1], motif.select_info.stage_done_snd[2])
-						stageActiveType = 'stage_done'
-						stageEnd = true
-					elseif stageActiveCount < motif.select_info.stage_active_switchtime then --delay change
-						stageActiveCount = stageActiveCount + 1
+					--draw stage portrait loaded from stage SFF
 					else
-						if stageActiveType == 'stage_active' then
-							stageActiveType = 'stage_active2'
-						else
-							stageActiveType = 'stage_active'
+						main.f_animPosDraw(
+							main.t_selStages[main.t_selectableStages[stageListNo]].anim_data,
+							(motif.select_info.stage_pos[1] + motif.select_info.stage_portrait_offset[1])  + ( (stageSlideHor / motif.select_info.stage_fp_slide_time) * motif.select_info.stage_spacing[1] * slideHorDir),
+							(motif.select_info.stage_pos[2] + motif.select_info.stage_portrait_offset[2]) + ( (stageSlideVer / motif.select_info.stage_fp_slide_time) * motif.select_info.stage_spacing[2] * slideVerDir)
+						)
+						--print(((stageListNo) % NumStages[1]) + 1)
+						for n = 1, motif.select_info['stage_fp_main_right'] or 0 do
+							main.f_animPosDraw(
+								main.t_selStages[main.t_selectableStages[((stageListNo + n - 1 - StartNumbers[currentStageRow]) % (NumStages[currentStageRow])) + 1 + StartNumbers[currentStageRow]]].anim_data,
+								(motif.select_info.stage_pos[1] + motif.select_info.stage_portrait_offset[1] + (n * motif.select_info.stage_spacing[1]))  + ( (stageSlideHor / motif.select_info.stage_fp_slide_time) * motif.select_info.stage_spacing[1] * slideHorDir),
+								motif.select_info.stage_pos[2] + motif.select_info.stage_portrait_offset[2]
+							)
 						end
-						stageActiveCount = 0
+						for n = 1, motif.select_info['stage_fp_main_left'] or 0 do
+							main.f_animPosDraw(
+								main.t_selStages[main.t_selectableStages[((stageListNo - n - 1 - StartNumbers[currentStageRow]) % (NumStages[currentStageRow])) + 1 + StartNumbers[currentStageRow]]].anim_data,
+								(motif.select_info.stage_pos[1] + motif.select_info.stage_portrait_offset[1] - (n * motif.select_info.stage_spacing[1]))  + ( (stageSlideHor / motif.select_info.stage_fp_slide_time) * motif.select_info.stage_spacing[1] * slideHorDir),
+								motif.select_info.stage_pos[2] + motif.select_info.stage_portrait_offset[2]
+							)
+						end
 					end
-				end
-				--draw stage name
-				local t_txt = {}
-				if stageListNo == 0 then
-					t_txt[1] = motif.select_info.stage_random_text
+						for n = 1, motif.select_info['stage_fp_main_up'] or 0 do
+							if currentStageRow - n <= 0 then
+								if currentStageRow - n == 0 then
+									main.f_animPosDraw(
+										motif.select_info.stage_portrait_random_data,
+										0,
+										(-(n * motif.select_info.stage_spacing[2])) + ( (stageSlideVer / motif.select_info.stage_fp_slide_time) * motif.select_info.stage_spacing[2] * slideVerDir)
+									)
+								else
+									main.f_animPosDraw(
+										main.t_selStages[main.t_selectableStages[hoverStages[(currentStageRow - n) % #NumStages + 1]]].anim_data,
+										motif.select_info.stage_pos[1] + motif.select_info.stage_portrait_offset[1],
+										(motif.select_info.stage_pos[2] + motif.select_info.stage_portrait_offset[2] - (n * motif.select_info.stage_spacing[2])) + ( (stageSlideVer / motif.select_info.stage_fp_slide_time) * motif.select_info.stage_spacing[2] * slideVerDir)
+									)
+								end
+							else
+							main.f_animPosDraw(
+								main.t_selStages[main.t_selectableStages[hoverStages[currentStageRow - n]]].anim_data,
+								motif.select_info.stage_pos[1] + motif.select_info.stage_portrait_offset[1],
+								(motif.select_info.stage_pos[2] + motif.select_info.stage_portrait_offset[2] - (n * motif.select_info.stage_spacing[2])) + ( (stageSlideVer / motif.select_info.stage_fp_slide_time) * motif.select_info.stage_spacing[2] * slideVerDir)
+							)
+							end
+						end
+						for n = 1, motif.select_info['stage_fp_main_down'] or 0 do
+							if currentStageRow + n > totalRows then
+								if (currentStageRow + n - 1) % #NumStages == 0 then
+									main.f_animPosDraw(
+										motif.select_info.stage_portrait_random_data,
+										0,
+										((n * motif.select_info.stage_spacing[2])) + ( (stageSlideVer / motif.select_info.stage_fp_slide_time) * motif.select_info.stage_spacing[2] * slideVerDir)
+									)
+								else
+									main.f_animPosDraw(
+										main.t_selStages[main.t_selectableStages[hoverStages[(currentStageRow - n) % #NumStages + 1]]].anim_data,
+										motif.select_info.stage_pos[1] + motif.select_info.stage_portrait_offset[1],
+										(motif.select_info.stage_pos[2] + motif.select_info.stage_portrait_offset[2] + (n * motif.select_info.stage_spacing[2])) + ( (stageSlideVer / motif.select_info.stage_fp_slide_time) * motif.select_info.stage_spacing[2] * slideVerDir)
+									)
+								end
+							else
+							main.f_animPosDraw(
+								main.t_selStages[main.t_selectableStages[hoverStages[currentStageRow + n]]].anim_data,
+								motif.select_info.stage_pos[1] + motif.select_info.stage_portrait_offset[1],
+								(motif.select_info.stage_pos[2] + motif.select_info.stage_portrait_offset[2] + (n * motif.select_info.stage_spacing[2])) + ( (stageSlideVer / motif.select_info.stage_fp_slide_time) * motif.select_info.stage_spacing[2] * slideVerDir)
+							)
+							end
+						end
+					if not stageEnd then
+						if main.f_input(main.t_players, {'pal', 's'}) or timerSelect == -1 then
+							sndPlay(motif.files.snd_data, motif.select_info.stage_done_snd[1], motif.select_info.stage_done_snd[2])
+							stageActiveType = 'stage_done'
+							stageEnd = true
+						elseif stageActiveCount < motif.select_info.stage_active_switchtime then --delay change
+							stageActiveCount = stageActiveCount + 1
+						else
+							if stageActiveType == 'stage_active' then
+								stageActiveType = 'stage_active2'
+							else
+								stageActiveType = 'stage_active'
+							end
+							stageActiveCount = 0
+						end
+					end
+					--draw stage name
+					local t_txt = {}
+					if stageListNo == 0 then
+						t_txt[1] = motif.select_info.stage_random_text
+					else
+						t = motif.select_info.stage_text:gsub('%%i', tostring(stageListNo))
+						t = t:gsub('\n', '\\n')
+						t = t:gsub('%%s', main.t_selStages[main.t_selectableStages[stageListNo]].name)
+						for i, c in ipairs(main.f_strsplit('\\n', t)) do --split string using "\n" delimiter
+							t_txt[i] = c
+						end
+					end
+					for i = 1, #t_txt do
+						txt_selStage:update({
+							font =   motif.select_info[stageActiveType .. '_font'][1],
+							bank =   motif.select_info[stageActiveType .. '_font'][2],
+							align =  motif.select_info[stageActiveType .. '_font'][3],
+							text =   t_txt[i],
+							x =      motif.select_info.stage_pos[1] + motif.select_info[stageActiveType .. '_offset'][1],
+							y =      motif.select_info.stage_pos[2] + motif.select_info[stageActiveType .. '_offset'][2] + main.f_ySpacing(motif.select_info, stageActiveType) * (i - 1),
+							scaleX = motif.select_info[stageActiveType .. '_scale'][1],
+							scaleY = motif.select_info[stageActiveType .. '_scale'][2],
+							r =      motif.select_info[stageActiveType .. '_font'][4],
+							g =      motif.select_info[stageActiveType .. '_font'][5],
+							b =      motif.select_info[stageActiveType .. '_font'][6],
+							height = motif.select_info[stageActiveType .. '_font'][7],
+						})
+						txt_selStage:draw()
+					end
 				else
-					t = motif.select_info.stage_text:gsub('%%i', tostring(stageListNo))
-					t = t:gsub('\n', '\\n')
-					t = t:gsub('%%s', main.t_selStages[main.t_selectableStages[stageListNo]].name)
-					for i, c in ipairs(main.f_strsplit('\\n', t)) do --split string using "\n" delimiter
-						t_txt[i] = c
+					--draw stage portrait background
+					main.f_animPosDraw(motif.select_info.stage_portrait_bg_data)
+					--draw stage portrait (random)
+					if stageListNo == 0 then
+						main.f_animPosDraw(motif.select_info.stage_portrait_random_data)
+					--draw stage portrait loaded from stage SFF
+					else
+						main.f_animPosDraw(
+							main.t_selStages[main.t_selectableStages[stageListNo]].anim_data,
+							motif.select_info.stage_pos[1] + motif.select_info.stage_portrait_offset[1],
+							motif.select_info.stage_pos[2] + motif.select_info.stage_portrait_offset[2]
+						)
 					end
-				end
-				for i = 1, #t_txt do
-					txt_selStage:update({
-						font =   motif.select_info[stageActiveType .. '_font'][1],
-						bank =   motif.select_info[stageActiveType .. '_font'][2],
-						align =  motif.select_info[stageActiveType .. '_font'][3],
-						text =   t_txt[i],
-						x =      motif.select_info.stage_pos[1] + motif.select_info[stageActiveType .. '_offset'][1],
-						y =      motif.select_info.stage_pos[2] + motif.select_info[stageActiveType .. '_offset'][2] + main.f_ySpacing(motif.select_info, stageActiveType) * (i - 1),
-						scaleX = motif.select_info[stageActiveType .. '_scale'][1],
-						scaleY = motif.select_info[stageActiveType .. '_scale'][2],
-						r =      motif.select_info[stageActiveType .. '_font'][4],
-						g =      motif.select_info[stageActiveType .. '_font'][5],
-						b =      motif.select_info[stageActiveType .. '_font'][6],
-						height = motif.select_info[stageActiveType .. '_font'][7],
-					})
-					txt_selStage:draw()
+					if not stageEnd then
+						if main.f_input(main.t_players, {'pal', 's'}) or timerSelect == -1 then
+							sndPlay(motif.files.snd_data, motif.select_info.stage_done_snd[1], motif.select_info.stage_done_snd[2])
+							stageActiveType = 'stage_done'
+							stageEnd = true
+						elseif stageActiveCount < motif.select_info.stage_active_switchtime then --delay change
+							stageActiveCount = stageActiveCount + 1
+						else
+							if stageActiveType == 'stage_active' then
+								stageActiveType = 'stage_active2'
+							else
+								stageActiveType = 'stage_active'
+							end
+							stageActiveCount = 0
+						end
+					end
+					--draw stage name
+					local t_txt = {}
+					if stageListNo == 0 then
+						t_txt[1] = motif.select_info.stage_random_text
+					else
+						t = motif.select_info.stage_text:gsub('%%i', tostring(stageListNo))
+						t = t:gsub('\n', '\\n')
+						t = t:gsub('%%s', main.t_selStages[main.t_selectableStages[stageListNo]].name)
+						for i, c in ipairs(main.f_strsplit('\\n', t)) do --split string using "\n" delimiter
+							t_txt[i] = c
+						end
+					end
+					for i = 1, #t_txt do
+						txt_selStage:update({
+							font =   motif.select_info[stageActiveType .. '_font'][1],
+							bank =   motif.select_info[stageActiveType .. '_font'][2],
+							align =  motif.select_info[stageActiveType .. '_font'][3],
+							text =   t_txt[i],
+							x =      motif.select_info.stage_pos[1] + motif.select_info[stageActiveType .. '_offset'][1],
+							y =      motif.select_info.stage_pos[2] + motif.select_info[stageActiveType .. '_offset'][2] + main.f_ySpacing(motif.select_info, stageActiveType) * (i - 1),
+							scaleX = motif.select_info[stageActiveType .. '_scale'][1],
+							scaleY = motif.select_info[stageActiveType .. '_scale'][2],
+							r =      motif.select_info[stageActiveType .. '_font'][4],
+							g =      motif.select_info[stageActiveType .. '_font'][5],
+							b =      motif.select_info[stageActiveType .. '_font'][6],
+							height = motif.select_info[stageActiveType .. '_font'][7],
+						})
+						txt_selStage:draw()
+					end
 				end
 			end
 		end
@@ -803,6 +912,8 @@ function start.f_stageMenu()
 			if currentStageRow ~= 0 then
 				sndPlay(motif.files.snd_data, motif.select_info.stage_move_snd[1], motif.select_info.stage_move_snd[2])
 				stageListNo = ((stageListNo - 2 - StartNumbers[currentStageRow]) % (NumStages[currentStageRow])) + 1 + StartNumbers[currentStageRow]
+				slideHorDir = -1
+				stageSlideHor = motif.select_info.stage_fp_slide_time
 				hoverStages[currentStageRow] = stageListNo
 			end
 			--if stageListNo < 0 then stageListNo = #main.t_selectableStages end
@@ -810,7 +921,8 @@ function start.f_stageMenu()
 			if currentStageRow ~= 0 then
 				sndPlay(motif.files.snd_data, motif.select_info.stage_move_snd[1], motif.select_info.stage_move_snd[2])
 				stageListNo = ((stageListNo - StartNumbers[currentStageRow]) % (NumStages[currentStageRow])) + 1 + StartNumbers[currentStageRow]
-				print(stageListNo)
+				slideHorDir = 1
+				stageSlideHor = motif.select_info.stage_fp_slide_time
 				hoverStages[currentStageRow] = stageListNo
 			end
 			--if stageListNo > #main.t_selectableStages then stageListNo = 0 end
@@ -825,6 +937,8 @@ function start.f_stageMenu()
 			else
 				stageListNo = hoverStages[currentStageRow]
 			end
+			slideVerDir = -1
+			stageSlideVer = motif.select_info.stage_fp_slide_time
 			--for i = 1, 10 do
 			--	stageListNo = stageListNo - 1
 			--	if stageListNo < 0 then stageListNo = #main.t_selectableStages end
@@ -842,6 +956,9 @@ function start.f_stageMenu()
 			else
 				stageListNo = hoverStages[currentStageRow]
 			end
+			
+			slideVerDir = 1
+			stageSlideVer = motif.select_info.stage_fp_slide_time
 		end
 	else
 		if timerSelect == -1 then
@@ -1031,7 +1148,7 @@ function start.f_selectReset(hardReset)
 		stageListNo = 0
 		restoreCursor = false
 		--cursor start cell
-		for i = 1, config.Players do
+		for i = 1, gameOption('Config.Players') do
 			if start.f_getCursorData(i, '_cursor_startcell')[1] < motif.select_info.rows then
 				start.c[i].selY = start.f_getCursorData(i, '_cursor_startcell')[1]
 			else
@@ -1053,9 +1170,9 @@ function start.f_selectReset(hardReset)
 	end
 	for side = 1, 2 do
 		if hardReset then
-			start.p[side].numSimul = math.max(2, config.NumSimul[1])
-			start.p[side].numTag = math.max(2, config.NumTag[1])
-			start.p[side].numTurns = math.max(2, config.NumTurns[1])
+			start.p[side].numSimul = math.max(2, gameOption('Options.Simul.Min'))
+			start.p[side].numTag = math.max(2, gameOption('Options.Tag.Min'))
+			start.p[side].numTurns = math.max(2, gameOption('Options.Turns.Min'))
 			start.p[side].numRatio = 1
 			start.p[side].teamMenu = 1
 			start.p[side].t_cursor = {}
@@ -1109,7 +1226,7 @@ function launchFight(data)
 		t.p2teammode = start.p[2].teamMode
 		t.challenger = main.f_arg(data.challenger, false)
 		t.continue = main.f_arg(data.continue, main.continueScreen)
-		t.quickcontinue = (not main.selectMenu[1] and not main.selectMenu[2]) or main.f_arg(data.quickcontinue, main.quickContinue or config.QuickContinue)
+		t.quickcontinue = (not main.selectMenu[1] and not main.selectMenu[2]) or main.f_arg(data.quickcontinue, main.quickContinue or gameOption('Options.QuickContinue'))
 		t.order = data.order or 1
 		t.orderselect = {main.f_arg(data.p1orderselect, main.orderSelect[1]), main.f_arg(data.p2orderselect, main.orderSelect[2])}
 		t.p1char = data.p1char or {}
@@ -1145,7 +1262,7 @@ function launchFight(data)
 		t.ai = data.ai or nil
 		t.vsscreen = main.f_arg(data.vsscreen, main.versusScreen)
 		t.victoryscreen = main.f_arg(data.victoryscreen, main.victoryScreen)
-		--t.frames = data.frames or framespercount()
+		--t.frames = data.frames or fightscreenvar("time.framespercount")
 		t.roundtime = data.time or nil
 		t.lua = data.lua or ''
 		t.stageNo = start.f_getStageRef(t.stage)
@@ -1266,8 +1383,8 @@ function launchFight(data)
 			return true --continue lua code execution
 		end
 	end
-	--TODO: fix config.BackgroundLoading setting
-	--if config.BackgroundLoading then
+	--TODO: fix gameOption('Config.BackgroundLoading') setting
+	--if gameOption('Config.BackgroundLoading') then
 	--	selectStart()
 	--else
 		clearSelected()
