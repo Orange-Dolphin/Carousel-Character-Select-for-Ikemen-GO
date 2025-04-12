@@ -15,7 +15,6 @@ totalRows = 0
 for i, stagesNumber in ipairs(NumStages) do
 	StartNumbers[i] = x
 	hoverStages[i] = x + 1
-	--print(NumStages[i])
 	totalRows = totalRows + 1
     x = x + stagesNumber
 end
@@ -164,8 +163,9 @@ function start.f_selectScreen()
 				end
 			end
 		end
-		start.c[side].trueX = 1
-		start.c[side].trueY = 1
+		start.c[side].trueX = start.c[side].selX + 1
+		start.c[side].trueY = start.c[side].selY + 1
+		
 	end
 	slideHor = 0
 	slideVer = 0
@@ -331,8 +331,6 @@ function start.f_selectScreen()
 							motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[1][2] * n) + (slideVer * ((spacing[2][2]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeVer[side])),
 							(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
 						)
-						--print(charsInRow[charsRows[((start.c[side].trueY - 1 - 1) % numberOfRows) + 1]][hoverCharacters[side][charsRows[((start.c[side].trueY - 1 - 1) % numberOfRows) + 1]]])
-						--local t = start.t_grid[((start.c[side].selY - n) % numberOfRows) + 1][hoverCharacters[side][((start.c[side].selY - n) % motif.select_info.rows) + 1]]
 						local t = start.t_grid[charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]][charsInRow[charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]][hoverCharacters[side][charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]]]]
 						animSetScale(
 							start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
@@ -542,6 +540,12 @@ function start.f_selectScreen()
 						motif.select_info['p' .. side .. '_fp_main_pos'][2] - (((motif.select_info['cell_size'][2] * scaleToUse[2]) - motif.select_info['cell_size'][2]) / 2) + (slideVer * ((spacing[2][2]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeVer[side])),
 						(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
 					)	
+					animSetScale(
+						start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
+						(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])),
+						(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])),
+						false
+					)
 				end
 			end
 		end
@@ -702,7 +706,6 @@ function start.f_selectScreen()
 							(motif.select_info.stage_pos[1] + motif.select_info.stage_portrait_offset[1])  + ( (stageSlideHor / motif.select_info.stage_fp_slide_time) * motif.select_info.stage_spacing[1] * slideHorDir),
 							(motif.select_info.stage_pos[2] + motif.select_info.stage_portrait_offset[2]) + ( (stageSlideVer / motif.select_info.stage_fp_slide_time) * motif.select_info.stage_spacing[2] * slideVerDir)
 						)
-						--print(((stageListNo) % NumStages[1]) + 1)
 						for n = 1, motif.select_info['stage_fp_main_right'] or 0 do
 							main.f_animPosDraw(
 								main.t_selStages[main.t_selectableStages[((stageListNo + n - 1 - StartNumbers[currentStageRow]) % (NumStages[currentStageRow])) + 1 + StartNumbers[currentStageRow]]].anim_data,
