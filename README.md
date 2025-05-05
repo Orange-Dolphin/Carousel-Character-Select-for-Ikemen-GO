@@ -7,6 +7,8 @@ p#.fp.main.pos = x, y ;Sets where the character the player is currently hovering
 # Optional Paramaters
 ```
 p#.fp.scale = x,y;Sets how large the currently hovered character should be shown relative to regular size, defaults to 1,1
+p#.fp.cursor = (1 or 0); Enables a cursor to be show on top of the hovering character, defaults to 1
+p#.fp.cursor = (1 or 0); Sets if the cursor should scale with the main portrait, defaults to 1
 ```
 ```
 p#.fp.down = #;Sets how many characters below the main one should be shown, defaults to 0
@@ -27,6 +29,7 @@ p#.fp.down.V.left = #;Sets how many characters to the left of the character V nu
 
 ```
 p#.fp.slide.time = #;Sets how many frames the animation should slide up, down, left, or right for when moving to a different character. Defaults to 1(instant).
+p#.fp.slide.cursor = (1 or 0);Enables the cursor to slide with the currently hovering character after inputting to change characters, defaults to 1
 ```
 
 
