@@ -49,6 +49,8 @@ end
 local stageListNo = 0
 local txt_selStage = main.f_createTextImg(motif.select_info, 'stage_active')
 
+local t_reservedChars = {{}, {}}
+
 
 function start.f_selectScreen()
 	start.f_selectReset(false)
@@ -546,27 +548,56 @@ function start.f_selectScreen()
 						(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])),
 						false
 					)
+					
+					if motif.select_info['p' .. side .. '_fp_cursor'] ~= 0 then
+						prefix = 'p' .. side .. '_cursor_active'
+						-- create spr/anim data, if not existing yet
+						if motif.select_info['p' .. side .. '_cursor_active' .. '_data'] == nil then
+							-- if cell based variants are not defined we're defaulting to standard pX parameters
+							for _, v in ipairs({'_anim', '_spr', '_offset', '_scale', '_facing'}) do
+								if motif.select_info[prefix .. v] == nil then
+									motif.select_info[prefix .. v] = start.f_getCursorData(pn, param .. v)
+								end
+							end
+							motif.f_loadSprData(motif.select_info, {s = prefix .. '_'})
+						end
+						if motif.select_info['p' .. side .. '_fp_cursor_scale'] ~= 0 then
+							animSetScale(
+								motif.select_info[prefix .. '_data'],
+								scaleToUse[1],
+								scaleToUse[2],
+								false
+							)
+						end
+						if motif.select_info['p' .. side .. '_fp_slide_cursor'] == 1 then
+							-- draw
+							main.f_animPosDraw(
+								motif.select_info[prefix .. '_data'],
+								motif.select_info['p' .. side .. '_fp_main_pos'][1] - (((motif.select_info['cell_size'][1] * scaleToUse[1]) - motif.select_info['cell_size'][1]) / 2)  + (slideHor * ((spacing[4][1]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeHor[side])),
+								motif.select_info['p' .. side .. '_fp_main_pos'][2] - (((motif.select_info['cell_size'][2] * scaleToUse[2]) - motif.select_info['cell_size'][2]) / 2) + (slideVer * ((spacing[2][2]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeVer[side])),
+								(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
+							)
+						else
+							-- draw
+							main.f_animPosDraw(
+								motif.select_info[prefix .. '_data'],
+								motif.select_info['p' .. side .. '_fp_main_pos'][1],
+								motif.select_info['p' .. side .. '_fp_main_pos'][2],
+								(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
+							)
+						end
+						if motif.select_info['p' .. side .. '_fp_cursor_scale'] ~= 0 then
+							animSetScale(
+								motif.select_info[prefix .. '_data'],
+								1,
+								1,
+								false
+							)
+						end
+					end
 				end
 			end
 		end
-		prefix = 'p1_cursor_active'
-		-- create spr/anim data, if not existing yet
-		if motif.select_info['p1_cursor_active' .. '_data'] == nil then
-			-- if cell based variants are not defined we're defaulting to standard pX parameters
-			for _, v in ipairs({'_anim', '_spr', '_offset', '_scale', '_facing'}) do
-				if motif.select_info[prefix .. v] == nil then
-					motif.select_info[prefix .. v] = start.f_getCursorData(pn, param .. v)
-				end
-			end
-			motif.f_loadSprData(motif.select_info, {s = prefix .. '_'})
-		end
-		-- draw
-		--[[main.f_animPosDraw(
-			motif.select_info[prefix .. '_data'],
-			motif.select_info['p' .. side .. '_fp_main_pos'][1],
-			motif.select_info['p' .. side .. '_fp_main_pos'][2],
-			(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
-		)]]--
 		--draw done cursors
 		for side = 1, 2 do
 			for _, v in pairs(start.p[side].t_selected) do
@@ -902,6 +933,180 @@ function start.f_selectScreen()
 	return not escFlag
 end
 
+
+
+--;===========================================================
+--; SELECT MENU
+--;===========================================================
+function start.f_selectMenu(side, cmd, player, member, selectState)
+	--predefined selection
+	if main.forceChar[side] ~= nil then
+		local t = {}
+		for _, v in ipairs(main.forceChar[side]) do
+			if t[v] == nil then
+				t[v] = ''
+			end
+			table.insert(start.p[side].t_selected, {
+				ref = v,
+				pal = start.f_selectPal(v),
+				--pn = start.f_getPlayerNo(side, #start.p[side].t_selected + 1),
+				--cursor = = {},
+				--ratioLevel = start.f_getRatio(side),
+			})
+		end
+		start.p[side].selEnd = true
+		return 0
+	--manual selection
+	elseif not start.p[side].selEnd then
+		--cell not selected yet
+		if selectState == 0 then
+			--restore cursor coordinates
+			if restoreCursor then
+				-- remove entries if stored cursors exceeds team size
+				if #start.p[side].t_cursor > start.p[side].numChars then
+					for i = #start.p[side].t_cursor, start.p[side].numChars + 1, -1 do
+						start.p[side].t_cursor[i] = nil
+					end
+				end
+				-- restore saved position
+				if start.p[side].t_cursor[member] ~= nil then
+					local selX = start.p[side].t_cursor[member].x
+					local selY = start.p[side].t_cursor[member].y
+					if gameOption('Options.Team.Duplicates') or t_reservedChars[side][start.t_grid[selY + 1][selX + 1].char_ref] == nil then
+						start.c[player].selX = selX
+						start.c[player].selY = selY
+					end
+					start.p[side].t_cursor[member] = nil
+				end
+			end
+			--calculate current position
+			start.c[player].selX, start.c[player].selY = start.f_cellMovement(start.c[player].selX, start.c[player].selY, cmd, side, start.f_getCursorData(player, '_cursor_move_snd'))
+			start.c[player].cell = start.c[player].selX + motif.select_info.columns * start.c[player].selY
+			start.c[player].selRef = start.f_selGrid(start.c[player].cell + 1).char_ref
+			-- temp data not existing yet
+			if start.p[side].t_selTemp[member] == nil then
+				table.insert(start.p[side].t_selTemp, {
+					ref = start.c[player].selRef,
+					cell = start.c[player].cell,
+					anim = motif.select_info['p' .. side .. '_member' .. member .. '_face_anim'] or motif.select_info['p' .. side .. '_face_anim'],
+					anim_data = start.f_animGet(start.c[player].selRef, side, member, motif.select_info, '_face', '', true),
+					face2_data = start.f_animGet(start.c[player].selRef, side, member, motif.select_info, '_face2', '', true),
+					slide_dist = {0, 0},
+				})
+			else
+				local updateAnim = false
+				local slotSelected = start.f_slotSelected(start.c[player].cell + 1, side, cmd, player, start.c[player].selX, start.c[player].selY)
+				-- cursor changed position or character change within current slot
+				if start.p[side].t_selTemp[member].cell ~= start.c[player].cell or start.p[side].t_selTemp[member].ref ~= start.c[player].selRef then
+					--start.p[side].t_selTemp[member].pal = 1
+					start.p[side].t_selTemp[member].ref = start.c[player].selRef
+					start.p[side].t_selTemp[member].cell = start.c[player].cell
+					start.p[side].t_selTemp[member].anim = motif.select_info['p' .. side .. '_member' .. member .. '_face_anim'] or motif.select_info['p' .. side .. '_face_anim']
+					start.p[side].t_selTemp[member].slide_dist = {0, 0}
+					updateAnim = true
+				end
+				-- cursor at randomselect cell
+				if start.f_selGrid(start.c[player].cell + 1).char == 'randomselect' or start.f_selGrid(start.c[player].cell + 1).hidden == 3 then
+					if start.c[player].randCnt > 0 then
+						start.c[player].randCnt = start.c[player].randCnt - 1
+						start.c[player].selRef = start.c[player].randRef
+					else
+						if motif.select_info.random_move_snd_cancel == 1 then
+							sndStop(motif.files.snd_data, start.f_getCursorData(player, '_random_move_snd')[1], start.f_getCursorData(player, '_random_move_snd')[2])
+						end
+						sndPlay(motif.files.snd_data, start.f_getCursorData(player, '_random_move_snd')[1], start.f_getCursorData(player, '_random_move_snd')[2])
+						start.c[player].randCnt = motif.select_info.cell_random_switchtime
+						start.c[player].selRef = start.f_randomChar(side)
+						if start.c[player].randRef ~= start.c[player].selRef or start.p[side].t_selTemp[member].anim_data == nil then
+							updateAnim = true
+							start.c[player].randRef = start.c[player].selRef
+						end
+					end
+				end
+				-- update anim data
+				if updateAnim then
+					start.p[side].t_selTemp[member].anim_data = start.f_animGet(start.c[player].selRef, side, member, motif.select_info, '_face', '', true)
+					start.p[side].t_selTemp[member].face2_data = start.f_animGet(start.c[player].selRef, side, member, motif.select_info, '_face2', '', true)
+				end
+				-- cell selected or select screen timer reached 0
+				if (slotSelected and start.f_selGrid(start.c[player].cell + 1).char ~= nil and start.f_selGrid(start.c[player].cell + 1).hidden ~= 2) or (motif.select_info.timer_count ~= -1 and timerSelect == -1) then
+					sndPlay(motif.files.snd_data, start.f_getCursorData(player, '_cursor_done_snd')[1], start.f_getCursorData(player, '_cursor_done_snd')[2])
+					start.f_playWave(start.c[player].selRef, 'cursor', motif.select_info['p' .. side .. '_select_snd'][1], motif.select_info['p' .. side .. '_select_snd'][2])
+					start.p[side].t_selTemp[member].pal = main.f_btnPalNo(cmd)
+					if start.p[side].t_selTemp[member].pal == nil or start.p[side].t_selTemp[member].pal == 0 then
+						start.p[side].t_selTemp[member].pal = 1
+					end
+					-- if select anim differs from done anim and coop or pX.face.num allows to display more than 1 portrait or it's the last team member
+					local done_anim = motif.select_info['p' .. side .. '_member' .. member .. '_face_done_anim'] or motif.select_info['p' .. side .. '_face_done_anim']
+					if done_anim ~= -1 and start.p[side].t_selTemp[member].anim ~= done_anim and (main.coop or motif.select_info['p' .. side .. '_face_num'] > 1 or main.f_tableLength(start.p[side].t_selected) + 1 == start.p[side].numChars) then
+						local a = start.f_animGet(start.c[player].selRef, side, member, motif.select_info, '_face', '_done', false)
+						if a then
+							start.p[side].t_selTemp[member].anim_data = a
+							start.p[side].screenDelay = math.min(120, math.max(start.p[side].screenDelay, animGetLength(start.p[side].t_selTemp[member].anim_data)))
+						end
+					end
+					start.p[side].t_selTemp[member].ref = start.c[player].selRef
+					main.f_cmdBufReset(cmd)
+					selectState = 1
+				end
+			end
+		--selection menu
+		elseif selectState == 1 then
+			--TODO: hook left for optional menu that shows up after selecting character (groove, palette selection etc.)
+			--once everything is ready set selectState to 3 to confirm character selection
+			selectState = 3
+		--confirm selection
+		elseif selectState == 3 then
+			start.p[side].t_selected[member] = {
+				ref = start.c[player].selRef,
+				pal = start.f_selectPal(start.c[player].selRef, start.p[side].t_selTemp[member].pal),
+				pn = start.f_getPlayerNo(side, member),
+				cursor = {start.c[player].selX, start.c[player].selY},
+				ratioLevel = start.f_getRatio(side),
+			}
+			if not gameOption('Options.Team.Duplicates') then
+				t_reservedChars[side][start.c[player].selRef] = true
+			end
+			start.p[side].t_cursor[member] = {x = start.c[player].selX, y = start.c[player].selY}
+			if main.f_tableLength(start.p[side].t_selected) == start.p[side].numChars then --if all characters have been chosen
+				if side == 1 and main.cpuSide[2] and start.reset then --if player1 is allowed to select p2 characters
+					if timerSelect == -1 then
+						start.p[2].teamMode = start.p[1].teamMode
+						start.p[2].numChars = start.p[1].numChars
+						start.c[2].cell = start.c[1].cell
+						start.c[2].selX = start.c[1].selX
+						start.c[2].selY = start.c[1].selY
+					else
+						start.p[2].teamEnd = false
+					end
+				end
+				start.p[side].selEnd = true
+			elseif not gameOption('Options.Team.Duplicates') and start.t_grid[start.c[player].selY + 1][start.c[player].selX + 1].char ~= 'randomselect' then
+				local t_dirs = {'F', 'B', 'D', 'U'}
+				if start.c[player].selY + 1 >= motif.select_info.rows then --next row not visible on the screen
+					t_dirs = {'F', 'B', 'U', 'D'}
+				end
+				for _, v in ipairs(t_dirs) do
+					local selX, selY = start.f_cellMovement(start.c[player].selX, start.c[player].selY, cmd, side, start.f_getCursorData(player, '_cursor_move_snd'), v)
+					if start.t_grid[selY + 1][selX + 1].char ~= nil and (selX ~= start.c[player].selX or selY ~= start.c[player].selY) then
+						start.c[player].selX, start.c[player].selY = selX, selY
+						break
+					end
+				end
+			end
+			if not start.p[1].teamEnd or not start.p[2].teamEnd or not start.p[1].selEnd or not start.p[2].selEnd then
+				timerSelect = motif.select_info.timer_displaytime
+			end
+			if main.coop and (side == 1 or gamemode('versuscoop')) then --remaining members are controlled by different players
+				selectState = 4
+			elseif not start.p[side].selEnd then --next member controlled by this player should become selectable
+				selectState = 0
+			end
+		end
+	end
+	return selectState
+end
+
 --;===========================================================
 --; STAGE MENU
 --;===========================================================
@@ -919,7 +1124,6 @@ function start.f_stageMenu()
 				stageSlideHor = motif.select_info.stage_fp_slide_time
 				hoverStages[currentStageRow] = stageListNo
 			end
-			--if stageListNo < 0 then stageListNo = #main.t_selectableStages end
 		elseif main.f_input(main.t_players, {'$F'}) then
 			if currentStageRow ~= 0 then
 				sndPlay(motif.files.snd_data, motif.select_info.stage_move_snd[1], motif.select_info.stage_move_snd[2])
@@ -928,7 +1132,6 @@ function start.f_stageMenu()
 				stageSlideHor = motif.select_info.stage_fp_slide_time
 				hoverStages[currentStageRow] = stageListNo
 			end
-			--if stageListNo > #main.t_selectableStages then stageListNo = 0 end
 		elseif main.f_input(main.t_players, {'$U'}) then
 			sndPlay(motif.files.snd_data, motif.select_info.stage_move_snd[1], motif.select_info.stage_move_snd[2])
 			currentStageRow = currentStageRow - 1
@@ -942,16 +1145,8 @@ function start.f_stageMenu()
 			end
 			slideVerDir = -1
 			stageSlideVer = motif.select_info.stage_fp_slide_time
-			--for i = 1, 10 do
-			--	stageListNo = stageListNo - 1
-			--	if stageListNo < 0 then stageListNo = #main.t_selectableStages end
-			--end
 		elseif main.f_input(main.t_players, {'$D'}) then
 			sndPlay(motif.files.snd_data, motif.select_info.stage_move_snd[1], motif.select_info.stage_move_snd[2])
-			--for i = 1, 10 do
-			--	stageListNo = stageListNo + 1
-			--	if stageListNo > #main.t_selectableStages then stageListNo = 0 end
-			--end
 			currentStageRow = currentStageRow + 1
 			if currentStageRow == totalRows + 1 then
 				stageListNo = 0
@@ -1032,86 +1227,6 @@ end
 function start.f_cellMovement(selX, selY, cmd, side, snd, dir)
 	local tmpX = selX
 	local tmpY = selY
-	local found = false
-	--[[if main.f_input({cmd}, {'$U'}) or dir == 'U' then
-		for i = 1, motif.select_info.rows do
-			selY = selY - 1
-			if selY < 0 then
-				if motif.select_info.wrapping == 1 or dir ~= nil then
-					selY = motif.select_info.rows - 1
-				else
-					selY = tmpY
-				end
-			end
-			if dir ~= nil then
-				found, selX = start.f_searchEmptyBoxes(selX, selY, side, -1)
-			elseif (start.t_grid[selY + 1][selX + 1].char ~= nil or motif.select_info.moveoveremptyboxes == 1) and start.t_grid[selY + 1][selX + 1].skip ~= 1 and (config.TeamDuplicates or start.t_grid[selY + 1][selX + 1].char == 'randomselect' or not t_reservedChars[side][start.t_grid[selY + 1][selX + 1].char_ref]) and start.t_grid[selY + 1][selX + 1].hidden ~= 2 then
-				break
-			elseif motif.select_info.searchemptyboxesup ~= 0 then
-				found, selX = start.f_searchEmptyBoxes(selX, selY, side, motif.select_info.searchemptyboxesup)
-			end
-			if found then
-				break
-			end
-		end
-	elseif main.f_input({cmd}, {'$D'}) or dir == 'D' then
-		for i = 1, motif.select_info.rows do
-			selY = selY + 1
-			if selY >= motif.select_info.rows then
-				if motif.select_info.wrapping == 1 or dir ~= nil then
-					selY = 0
-				else
-					selY = tmpY
-				end
-			end
-			if dir ~= nil then
-				found, selX = start.f_searchEmptyBoxes(selX, selY, side, 1)
-			elseif (start.t_grid[selY + 1][selX + 1].char ~= nil or motif.select_info.moveoveremptyboxes == 1) and start.t_grid[selY + 1][selX + 1].skip ~= 1 and (config.TeamDuplicates or start.t_grid[selY + 1][selX + 1].char == 'randomselect' or not t_reservedChars[side][start.t_grid[selY + 1][selX + 1].char_ref]) and start.t_grid[selY + 1][selX + 1].hidden ~= 2 then
-				break
-			elseif motif.select_info.searchemptyboxesdown ~= 0 then
-				found, selX = start.f_searchEmptyBoxes(selX, selY, side, motif.select_info.searchemptyboxesdown)
-			end
-			if found then
-				break
-			end
-		end
-	elseif main.f_input({cmd}, {'$B'}) or dir == 'B' then
-		if dir ~= nil then
-			found, selX = start.f_searchEmptyBoxes(selX, selY, side, -1)
-		else
-			for i = 1, motif.select_info.columns do
-				selX = selX - 1
-				if selX < 0 then
-					if motif.select_info.wrapping == 1 then
-						selX = motif.select_info.columns - 1
-					else
-						selX = tmpX
-					end
-				end
-				if (start.t_grid[selY + 1][selX + 1].char ~= nil or motif.select_info.moveoveremptyboxes == 1) and start.t_grid[selY + 1][selX + 1].skip ~= 1 and (config.TeamDuplicates or start.t_grid[selY + 1][selX + 1].char == 'randomselect' or not t_reservedChars[side][start.t_grid[selY + 1][selX + 1].char_ref]) and start.t_grid[selY + 1][selX + 1].hidden ~= 2 then
-					break
-				end
-			end
-		end
-	elseif main.f_input({cmd}, {'$F'}) or dir == 'F' then
-		if dir ~= nil then
-			found, selX = start.f_searchEmptyBoxes(selX, selY, side, 1)
-		else
-			for i = 1, motif.select_info.columns do
-				selX = selX + 1
-				if selX >= motif.select_info.columns then
-					if motif.select_info.wrapping == 1 then
-						selX = 0
-					else
-						selX = tmpX
-					end
-				end
-				if (start.t_grid[selY + 1][selX + 1].char ~= nil or motif.select_info.moveoveremptyboxes == 1) and start.t_grid[selY + 1][selX + 1].skip ~= 1 and (config.TeamDuplicates or start.t_grid[selY + 1][selX + 1].char == 'randomselect' or not t_reservedChars[side][start.t_grid[selY + 1][selX + 1].char_ref]) and start.t_grid[selY + 1][selX + 1].hidden ~= 2 then
-					break
-				end
-			end
-		end
-	end]]--
 	if (tmpX ~= selX or tmpY ~= selY) then
 		if dir == nil then
 			sndPlay(motif.files.snd_data, snd[1], snd[2])
@@ -1215,6 +1330,77 @@ function start.f_selectReset(hardReset)
 	t_recordText = start.f_getRecordText()
 	menu.movelistChar = 1
 	hook.run("start.f_selectReset")
+end
+
+--return true if slot is selected, update start.t_grid
+function start.f_slotSelected(cell, side, cmd, player, x, y)
+	if cmd == nil then
+		return false
+	end
+	if #main.t_selGrid[cell].chars > 0 then
+		-- select.def 'slot' parameter special keys detection
+		for _, cmdType in ipairs({'select', 'next', 'previous'}) do
+			if main.t_selGrid[cell][cmdType] ~= nil then
+				for k, v in pairs(main.t_selGrid[cell][cmdType]) do
+					if main.f_input({cmd}, main.f_extractKeys(k)) then
+						if cmdType == 'next' then
+							local ok = false
+							for i = main.t_selGrid[cell].slot + 1, #v do
+								if start.f_getCharData(start.f_selGrid(cell, v[i]).char_ref).hidden < 2 then
+									main.t_selGrid[cell].slot = v[i]
+									ok = true
+									break
+								end
+							end
+							if not ok then
+								for i = 1, main.t_selGrid[cell].slot - 1 do
+									if start.f_getCharData(start.f_selGrid(cell, v[i]).char_ref).hidden < 2 then
+										main.t_selGrid[cell].slot = v[i]
+										ok = true
+										break
+									end
+								end
+							end
+							if ok then
+								sndPlay(motif.files.snd_data, motif.select_info['p' .. side .. '_swap_snd'][1], motif.select_info['p' .. side .. '_swap_snd'][2])
+							end
+						elseif cmdType == 'previous' then
+							local ok = false
+							for i = main.t_selGrid[cell].slot -1, 1, -1 do
+								if start.f_getCharData(start.f_selGrid(cell, v[i]).char_ref).hidden < 2 then
+									main.t_selGrid[cell].slot = v[i]
+									ok = true
+									break
+								end
+							end
+							if not ok then
+								for i = #v, main.t_selGrid[cell].slot + 1, -1 do
+									if start.f_getCharData(start.f_selGrid(cell, v[i]).char_ref).hidden < 2 then
+										main.t_selGrid[cell].slot = v[i]
+										ok = true
+										break
+									end
+								end
+							end
+							if ok then
+								sndPlay(motif.files.snd_data, motif.select_info['p' .. side .. '_swap_snd'][1], motif.select_info['p' .. side .. '_swap_snd'][2])
+							end
+						else --select
+							main.t_selGrid[cell].slot = v[math.random(1, #v)]
+							start.c[player].selRef = start.f_selGrid(cell).char_ref
+						end
+						start.t_grid[y + 1][x + 1].char = start.f_selGrid(cell).char
+						start.t_grid[y + 1][x + 1].char_ref = start.f_selGrid(cell).char_ref
+						start.t_grid[y + 1][x + 1].hidden = start.f_selGrid(cell).hidden
+						start.t_grid[y + 1][x + 1].skip = start.f_selGrid(cell).skip
+						return cmdType == 'select'
+					end
+				end
+			end
+		end
+	end
+	-- returns true on pressed key if current slot is not blocked by TeamDuplicates feature
+	return main.f_btnPalNo(cmd) > 0 and (not t_reservedChars[side][start.t_grid[y + 1][x + 1].char_ref] or start.t_grid[start.c[player].selY + 1][start.c[player].selX + 1].char == 'randomselect')
 end
 
 function launchFight(data)
