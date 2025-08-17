@@ -23,6 +23,8 @@ end
 if motif.select_info.stage_fp_slide_time == nil then
 	motif.select_info.stage_fp_slide_time = 1
 end
+
+
 local col = 1
 local row = 1
 for i = 1, #main.t_selGrid do
@@ -32,13 +34,37 @@ for i = 1, #main.t_selGrid do
 	end
 	if main.t_selGrid[i].slot ~= 1 then
 		main.t_selGrid[i].slot = 1
-		start.t_grid[row][col].char = start.f_selGrid(i).char
-		start.t_grid[row][col].char_ref = start.f_selGrid(i).char_ref
-		start.t_grid[row][col].hidden = start.f_selGrid(i).hidden
-		start.t_grid[row][col].skip = start.f_selGrid(i).skip
+		newGrid[row][col].char = start.f_selGrid(i).char
+		newGrid[row][col].char_ref = start.f_selGrid(i).char_ref
+		newGrid[row][col].hidden = start.f_selGrid(i).hidden
+		newGrid[row][col].skip = start.f_selGrid(i).skip
 	end
 	col = col + 1
 end
+
+newGrid = {}
+newGrid[1] = {}
+row = 1
+col = 1
+cellNum = 0
+for i = 1, #main.t_selGrid do
+	if start.f_selGrid(i).char ~= nil then
+		table.insert(newGrid[row], {char = start.f_selGrid(i).char, char_ref = start.f_selGrid(i).char_ref, hidden = start.f_selGrid(i).hidden, skip = start.f_selGrid(i).skip, cell = cellNum})
+		cellNum = cellNum + 1
+	elseif main.t_selGrid[i].slot ~= 1 then
+	
+	else
+		if #newGrid[row] > 0 then
+			row = row + 1
+			newGrid[row] = {}
+		end
+		cellNum = cellNum + 1
+	end
+
+end
+
+
+
 selScreenEnd = false
 
 local t_txt_name = {}
@@ -72,7 +98,7 @@ function start.f_selectScreen()
 	hoverCharacters = {}
 	for side = 1, 2 do
 		hoverCharacters[side] = {}
-		for i = 1, motif.select_info.rows do
+		for i = 1, #newGrid do
 			hoverCharacters[side][i] = 1
 		end
 	end
@@ -82,15 +108,24 @@ function start.f_selectScreen()
 	charsRows = {}
 	stageSlideHor = 0
 	stageSlideVer = 0
-	for i = 1, motif.select_info.rows do
+	for i = 1, #newGrid do
 		charsInRow[i] = {}
 		local rowChars = 0
-		for v = 1, motif.select_info.columns do
-			local t = start.t_grid[i][v]
+		for v = 1, #newGrid[i] do
+			local t = newGrid[i][v]
+			print(t.char)
+			print(i)
+			print(v)
+			print(t.hidden)
 			if t.char ~= nil and t.hidden ~= nil and t.hidden ~= 2 then
 				rowChars = rowChars + 1
 				table.insert(charsInRow[i], v)
 			end
+			print("==========")
+			for c, v in pairs(charsInRow[i]) do
+				print(v)
+			end
+			print("==========")
 			charsPerRow[i] = rowChars
 		end
 		if rowChars > 0 then
@@ -199,7 +234,7 @@ function start.f_selectScreen()
 		--draw cell art
 		--[[for row = 1, motif.select_info.rows do
 			for col = 1, motif.select_info.columns do
-				local t = start.t_grid[row][col]
+				local t = newGrid[row][col]
 				if t.skip ~= 1 then
 					--draw cell background
 					if (t.char ~= nil and (t.hidden == 0 or t.hidden == 3)) or motif.select_info.showemptyboxes == 1 then
@@ -333,7 +368,7 @@ function start.f_selectScreen()
 							motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[1][2] * n) + (slideVer * ((spacing[2][2]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeVer[side])),
 							(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
 						)
-						local t = start.t_grid[charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]][charsInRow[charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]][hoverCharacters[side][charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]]]]
+						local t = newGrid[charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]][charsInRow[charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]][hoverCharacters[side][charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]]]]
 						animSetScale(
 							start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
 							(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
@@ -355,7 +390,7 @@ function start.f_selectScreen()
 									(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
 								)
 								precalc = charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]
-								local t = start.t_grid[precalc][charsInRow[precalc][((hoverCharacters[side][precalc] + h - 1) % charsPerRow[precalc]) + 1]]
+								local t = newGrid[precalc][charsInRow[precalc][((hoverCharacters[side][precalc] + h - 1) % charsPerRow[precalc]) + 1]]
 								main.f_animPosDraw(
 									start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
 									motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[1][1] * n) + (spacing[4][1] * h),
@@ -373,7 +408,7 @@ function start.f_selectScreen()
 									(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
 								)
 								precalc = charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]
-								local t = start.t_grid[precalc][charsInRow[precalc][((hoverCharacters[side][precalc] - h - 1) % charsPerRow[precalc]) + 1]]
+								local t = newGrid[precalc][charsInRow[precalc][((hoverCharacters[side][precalc] - h - 1) % charsPerRow[precalc]) + 1]]
 								main.f_animPosDraw(
 									start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
 									motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[1][1] * n) + (spacing[3][1] * h),
@@ -390,7 +425,7 @@ function start.f_selectScreen()
 							motif.select_info['p' .. side .. '_fp_main_pos'][2] + (spacing[2][2] * n) + (slideVer * ((spacing[2][2]) / motif.select_info['p' .. side .. '_fp_slide_time'] * slideTimeVer[side])),
 							(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
 						)
-						local t = start.t_grid[charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]][charsInRow[charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]][hoverCharacters[side][charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]]]]
+						local t = newGrid[charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]][charsInRow[charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]][hoverCharacters[side][charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]]]]
 						animSetScale(
 							start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
 							(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
@@ -418,9 +453,9 @@ function start.f_selectScreen()
 								--	precalc = charsPerRow[((start.c[side].selY + n) % numberOfRows) + 1]
 								--end
 								precalc = charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]
-								local t = start.t_grid[precalc][charsInRow[precalc][((hoverCharacters[side][precalc] + h - 1) % charsPerRow[precalc]) + 1]]
+								local t = newGrid[precalc][charsInRow[precalc][((hoverCharacters[side][precalc] + h - 1) % charsPerRow[precalc]) + 1]]
 								
-								--local t = start.t_grid[((start.c[side].selY + n) % numberOfRows) + 1][charsInRow[precalc][((hoverCharacters[side][precalc] + h - 1) % charsPerRow[precalc]) + 1]]
+								--local t = newGrid[((start.c[side].selY + n) % numberOfRows) + 1][charsInRow[precalc][((hoverCharacters[side][precalc] + h - 1) % charsPerRow[precalc]) + 1]]
 								main.f_animPosDraw(
 									start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
 									motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[2][1] * n) + (spacing[4][1] * h),
@@ -442,9 +477,9 @@ function start.f_selectScreen()
 								--if precalc == 0 then
 								--	precalc = charsPerRow[((start.c[side].selY + n) % numberOfRows) + 1]
 								--end
-								--local t = start.t_grid[((start.c[side].selY + n) % numberOfRows) + 1][precalc]
+								--local t = newGrid[((start.c[side].selY + n) % numberOfRows) + 1][precalc]
 								precalc = charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]
-								local t = start.t_grid[precalc][charsInRow[precalc][((hoverCharacters[side][precalc] - h - 1) % charsPerRow[precalc]) + 1]]
+								local t = newGrid[precalc][charsInRow[precalc][((hoverCharacters[side][precalc] - h - 1) % charsPerRow[precalc]) + 1]]
 								main.f_animPosDraw(
 									start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
 									motif.select_info['p' .. side .. '_fp_main_pos'][1] + (spacing[2][1] * n) + (spacing[3][1] * h),
@@ -463,7 +498,7 @@ function start.f_selectScreen()
 								motif.select_info['p' .. side .. '_fp_main_pos'][2] + (n * spacing[4][2]),
 								(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
 							)
-							local t = start.t_grid[start.c[side].selY + 1][charsInRow[start.c[side].selY + 1][((start.c[side].trueX + n - 1) % charsPerRow[start.c[side].selY + 1]) + 1]]
+							local t = newGrid[start.c[side].selY + 1][charsInRow[start.c[side].selY + 1][((start.c[side].trueX + n - 1) % charsPerRow[start.c[side].selY + 1]) + 1]]
 							animSetScale(
 								start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
 								(motif.select_info.portrait_scale[1] * ((start.f_getCharData(t.char_ref).portrait_scale or 1) or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
@@ -486,7 +521,7 @@ function start.f_selectScreen()
 								motif.select_info['p' .. side .. '_fp_main_pos'][2] + (n * spacing[3][2]),
 								(motif.select_info['cell_' .. col .. '_' .. row .. '_facing'] or motif.select_info.cell_bg_facing)
 							)
-							local t = start.t_grid[start.c[side].selY + 1][charsInRow[start.c[side].selY + 1][((start.c[side].trueX - n - 1) % charsPerRow[start.c[side].selY + 1]) + 1]]
+							local t = newGrid[start.c[side].selY + 1][charsInRow[start.c[side].selY + 1][((start.c[side].trueX - n - 1) % charsPerRow[start.c[side].selY + 1]) + 1]]
 							animSetScale(
 								start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
 								(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
@@ -529,7 +564,7 @@ function start.f_selectScreen()
 						1,
 						false
 					)
-					local t = start.t_grid[start.c[side].selY + 1][start.c[side].selX + 1]
+					local t = newGrid[start.c[side].selY + 1][start.c[side].selX + 1]
 					animSetScale(
 						start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
 						(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * scaleToUse[1],
@@ -605,13 +640,13 @@ function start.f_selectScreen()
 					--get cell coordinates
 					local x = v.cursor[1]
 					local y = v.cursor[2]
-					local t = start.t_grid[y + 1][x + 1]
+					local t = newGrid[y + 1][x + 1]
 					--retrieve proper cell coordinates in case of random selection
 					--TODO: doesn't work with slot feature
 					--if (t.char == 'randomselect' or t.hidden == 3) --[[and not config.TeamDuplicates]] then
 					--	x = start.f_getCharData(v.ref).col - 1
 					--	y = start.f_getCharData(v.ref).row - 1
-					--	t = start.t_grid[y + 1][x + 1]
+					--	t = newGrid[y + 1][x + 1]
 					--end
 					--render only if cell is not hidden
 					if t.hidden ~= 1 and t.hidden ~= 2 then
@@ -972,7 +1007,7 @@ function start.f_selectMenu(side, cmd, player, member, selectState)
 				if start.p[side].t_cursor[member] ~= nil then
 					local selX = start.p[side].t_cursor[member].x
 					local selY = start.p[side].t_cursor[member].y
-					if gameOption('Options.Team.Duplicates') or t_reservedChars[side][start.t_grid[selY + 1][selX + 1].char_ref] == nil then
+					if gameOption('Options.Team.Duplicates') or t_reservedChars[side][newGrid[selY + 1][selX + 1].char_ref] == nil then
 						start.c[player].selX = selX
 						start.c[player].selY = selY
 					end
@@ -981,7 +1016,9 @@ function start.f_selectMenu(side, cmd, player, member, selectState)
 			end
 			--calculate current position
 			start.c[player].selX, start.c[player].selY = start.f_cellMovement(start.c[player].selX, start.c[player].selY, cmd, side, start.f_getCursorData(player, '_cursor_move_snd'))
-			start.c[player].cell = start.c[player].selX + motif.select_info.columns * start.c[player].selY
+			--start.c[player].cell = start.c[player].selX + motif.select_info.columns * start.c[player].selY
+			start.c[player].cell = newGrid[start.c[player].trueY][start.c[player].selX + 1].cell
+			print(start.c[player].cell)
 			start.c[player].selRef = start.f_selGrid(start.c[player].cell + 1).char_ref
 			-- temp data not existing yet
 			if start.p[side].t_selTemp[member] == nil then
@@ -1081,14 +1118,14 @@ function start.f_selectMenu(side, cmd, player, member, selectState)
 					end
 				end
 				start.p[side].selEnd = true
-			elseif not gameOption('Options.Team.Duplicates') and start.t_grid[start.c[player].selY + 1][start.c[player].selX + 1].char ~= 'randomselect' then
+			elseif not gameOption('Options.Team.Duplicates') and newGrid[start.c[player].selY + 1][start.c[player].selX + 1].char ~= 'randomselect' then
 				local t_dirs = {'F', 'B', 'D', 'U'}
 				if start.c[player].selY + 1 >= motif.select_info.rows then --next row not visible on the screen
 					t_dirs = {'F', 'B', 'U', 'D'}
 				end
 				for _, v in ipairs(t_dirs) do
 					local selX, selY = start.f_cellMovement(start.c[player].selX, start.c[player].selY, cmd, side, start.f_getCursorData(player, '_cursor_move_snd'), v)
-					if start.t_grid[selY + 1][selX + 1].char ~= nil and (selX ~= start.c[player].selX or selY ~= start.c[player].selY) then
+					if newGrid[selY + 1][selX + 1].char ~= nil and (selX ~= start.c[player].selX or selY ~= start.c[player].selY) then
 						start.c[player].selX, start.c[player].selY = selX, selY
 						break
 					end
@@ -1255,10 +1292,10 @@ function start.f_selectReset(hardReset)
 		end
 		if main.t_selGrid[i].slot ~= 1 then
 			main.t_selGrid[i].slot = 1
-			start.t_grid[row][col].char = start.f_selGrid(i).char
-			start.t_grid[row][col].char_ref = start.f_selGrid(i).char_ref
-			start.t_grid[row][col].hidden = start.f_selGrid(i).hidden
-			start.t_grid[row][col].skip = start.f_selGrid(i).skip
+			newGrid[row][col].char = start.f_selGrid(i).char
+			newGrid[row][col].char_ref = start.f_selGrid(i).char_ref
+			newGrid[row][col].hidden = start.f_selGrid(i).hidden
+			newGrid[row][col].skip = start.f_selGrid(i).skip
 		end
 		col = col + 1
 	end
@@ -1332,7 +1369,7 @@ function start.f_selectReset(hardReset)
 	hook.run("start.f_selectReset")
 end
 
---return true if slot is selected, update start.t_grid
+--return true if slot is selected, update newGrid
 function start.f_slotSelected(cell, side, cmd, player, x, y)
 	if cmd == nil then
 		return false
@@ -1389,10 +1426,10 @@ function start.f_slotSelected(cell, side, cmd, player, x, y)
 							main.t_selGrid[cell].slot = v[math.random(1, #v)]
 							start.c[player].selRef = start.f_selGrid(cell).char_ref
 						end
-						start.t_grid[y + 1][x + 1].char = start.f_selGrid(cell).char
-						start.t_grid[y + 1][x + 1].char_ref = start.f_selGrid(cell).char_ref
-						start.t_grid[y + 1][x + 1].hidden = start.f_selGrid(cell).hidden
-						start.t_grid[y + 1][x + 1].skip = start.f_selGrid(cell).skip
+						newGrid[y + 1][x + 1].char = start.f_selGrid(cell).char
+						newGrid[y + 1][x + 1].char_ref = start.f_selGrid(cell).char_ref
+						newGrid[y + 1][x + 1].hidden = start.f_selGrid(cell).hidden
+						newGrid[y + 1][x + 1].skip = start.f_selGrid(cell).skip
 						return cmdType == 'select'
 					end
 				end
@@ -1400,7 +1437,7 @@ function start.f_slotSelected(cell, side, cmd, player, x, y)
 		end
 	end
 	-- returns true on pressed key if current slot is not blocked by TeamDuplicates feature
-	return main.f_btnPalNo(cmd) > 0 and (not t_reservedChars[side][start.t_grid[y + 1][x + 1].char_ref] or start.t_grid[start.c[player].selY + 1][start.c[player].selX + 1].char == 'randomselect')
+	return main.f_btnPalNo(cmd) > 0 and (not t_reservedChars[side][newGrid[y + 1][x + 1].char_ref] or newGrid[start.c[player].selY + 1][start.c[player].selX + 1].char == 'randomselect')
 end
 
 function launchFight(data)
