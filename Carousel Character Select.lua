@@ -1,24 +1,24 @@
 enableStageCarousel = false
 if enableStageCarousel == true then
-NumStages = {}
-NumStages[1] = 5
-NumStages[2] = 19
-NumStages[3] = 4
-NumStages[4] = 4
---NumStages[4] = 3
---NumStages[5] = 3
---NumStages[6] = 3
-StartNumbers = {}
-hoverStages = {}
-x = 0
-totalRows = 0
-for i, stagesNumber in ipairs(NumStages) do
-	StartNumbers[i] = x
-	hoverStages[i] = x + 1
-	totalRows = totalRows + 1
-    x = x + stagesNumber
-end
-currentStageRow = 0
+	NumStages = {}
+	NumStages[1] = 5
+	NumStages[2] = 19
+	NumStages[3] = 4
+	NumStages[4] = 4
+	--NumStages[4] = 3
+	--NumStages[5] = 3
+	--NumStages[6] = 3
+	StartNumbers = {}
+	hoverStages = {}
+	x = 0
+	totalRows = 0
+	for i, stagesNumber in ipairs(NumStages) do
+		StartNumbers[i] = x
+		hoverStages[i] = x + 1
+		totalRows = totalRows + 1
+		x = x + stagesNumber
+	end
+	currentStageRow = 0
 end
 if motif.select_info.stage_fp_slide_time == nil then
 	motif.select_info.stage_fp_slide_time = 1
@@ -267,7 +267,7 @@ function start.f_selectScreen()
 		end]]--
 		for side = 1, 2 do
 			if motif.select_info['p' .. side .. '_fp_main_pos'] ~= nil then
-				if ((start.p[side].selEnd == false) and (start.p[side].teamEnd == true)) and (((start.p[1].selEnd and main.cpuSide[2]) or side == 1) or main.cpuSide[2] == false) then
+				if ((start.p[side].selEnd == false) and (start.p[side].teamEnd == true)) and (((start.p[1].selEnd and main.cpuSide[2]) or side == 1) or main.cpuSide[2] == false) and start.p[side].t_selCmd then
 					local t_cmd = {}
 					if main.coop then
 						--[[for i = 1, config.Players do
@@ -311,44 +311,46 @@ function start.f_selectScreen()
 						selectedCounter = 1
 						t_cmd = {side}
 					end
-					moved = false
-					if main.f_input(t_cmd, main.f_extractKeys('$U')) then
-						start.c[side].trueY = ((start.c[side].trueY - 2) % numberOfRows) + 1
-						start.c[side].selY = charsRows[start.c[side].trueY] - 1	
-						start.c[side].trueX = hoverCharacters[side][start.c[side].selY + 1]
-						start.c[side].selX = charsInRow[start.c[side].selY + 1][hoverCharacters[side][start.c[side].selY + 1]] - 1
-						slideVer = -1
-						slideTimeVer[side] = motif.select_info['p' .. side .. '_fp_slide_time']
-						moved = true
-					end
-					if main.f_input(t_cmd, main.f_extractKeys('$D')) then
-						start.c[side].trueY = (start.c[side].trueY % numberOfRows) + 1
-						start.c[side].selY = charsRows[start.c[side].trueY] - 1	
-						start.c[side].trueX = hoverCharacters[side][start.c[side].selY + 1]
-						start.c[side].selX = charsInRow[start.c[side].selY + 1][hoverCharacters[side][start.c[side].selY + 1]] - 1
-						slideVer = 1
-						slideTimeVer[side] = motif.select_info['p' .. side .. '_fp_slide_time']
-						moved = true
-					end
-					
-					if main.f_input(t_cmd, main.f_extractKeys('$F')) then
-						start.c[side].trueX = ((start.c[side].trueX) % charsPerRow[start.c[side].selY + 1]) + 1
-						start.c[side].selX = charsInRow[start.c[side].selY + 1][start.c[side].trueX] - 1
-						hoverCharacters[side][start.c[side].selY + 1] = start.c[side].trueX
-						slideHor = 1
-						slideTimeHor[side] = motif.select_info['p' .. side .. '_fp_slide_time']
-						moved = true
-					end		
-					if main.f_input(t_cmd, main.f_extractKeys('$B')) then
-						start.c[side].trueX = ((start.c[side].trueX - 2) % charsPerRow[start.c[side].selY + 1]) + 1
-						start.c[side].selX = charsInRow[start.c[side].selY + 1][start.c[side].trueX] - 1
-						hoverCharacters[side][start.c[side].selY + 1] = start.c[side].trueX		
-						slideHor = -1
-						slideTimeHor[side] = motif.select_info['p' .. side .. '_fp_slide_time']
-						moved = true
-					end
-					if moved == true then
-						sndPlay(motif.files.snd_data, motif.select_info['p' .. side .. '_cursor_move_snd'][1], motif.select_info['p' .. side .. '_cursor_move_snd'][2])
+					if start.p[side].t_selCmd[1] == nil or start.p[side].t_selCmd[1].selectState == nil or start.p[side].t_selCmd[1].selectState ~= 1 then
+						moved = false
+						if main.f_input(t_cmd, main.f_extractKeys('$U')) then
+							start.c[side].trueY = ((start.c[side].trueY - 2) % numberOfRows) + 1
+							start.c[side].selY = charsRows[start.c[side].trueY] - 1	
+							start.c[side].trueX = hoverCharacters[side][start.c[side].selY + 1]
+							start.c[side].selX = charsInRow[start.c[side].selY + 1][hoverCharacters[side][start.c[side].selY + 1]] - 1
+							slideVer = -1
+							slideTimeVer[side] = motif.select_info['p' .. side .. '_fp_slide_time']
+							moved = true
+						end
+						if main.f_input(t_cmd, main.f_extractKeys('$D')) then
+							start.c[side].trueY = (start.c[side].trueY % numberOfRows) + 1
+							start.c[side].selY = charsRows[start.c[side].trueY] - 1	
+							start.c[side].trueX = hoverCharacters[side][start.c[side].selY + 1]
+							start.c[side].selX = charsInRow[start.c[side].selY + 1][hoverCharacters[side][start.c[side].selY + 1]] - 1
+							slideVer = 1
+							slideTimeVer[side] = motif.select_info['p' .. side .. '_fp_slide_time']
+							moved = true
+						end
+						
+						if main.f_input(t_cmd, main.f_extractKeys('$F')) then
+							start.c[side].trueX = ((start.c[side].trueX) % charsPerRow[start.c[side].selY + 1]) + 1
+							start.c[side].selX = charsInRow[start.c[side].selY + 1][start.c[side].trueX] - 1
+							hoverCharacters[side][start.c[side].selY + 1] = start.c[side].trueX
+							slideHor = 1
+							slideTimeHor[side] = motif.select_info['p' .. side .. '_fp_slide_time']
+							moved = true
+						end		
+						if main.f_input(t_cmd, main.f_extractKeys('$B')) then
+							start.c[side].trueX = ((start.c[side].trueX - 2) % charsPerRow[start.c[side].selY + 1]) + 1
+							start.c[side].selX = charsInRow[start.c[side].selY + 1][start.c[side].trueX] - 1
+							hoverCharacters[side][start.c[side].selY + 1] = start.c[side].trueX		
+							slideHor = -1
+							slideTimeHor[side] = motif.select_info['p' .. side .. '_fp_slide_time']
+							moved = true
+						end
+						if moved == true then
+							sndPlay(motif.files.snd_data, motif.select_info['p' .. side .. '_cursor_move_snd'][1], motif.select_info['p' .. side .. '_cursor_move_snd'][2])
+						end
 					end
 				end
 				
@@ -371,8 +373,8 @@ function start.f_selectScreen()
 						local t = newGrid[charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]][charsInRow[charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]][hoverCharacters[side][charsRows[((start.c[side].trueY - n - 1) % numberOfRows) + 1]]]]
 						animSetScale(
 							start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
-							(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
-							(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
+							(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (motifViewport43(2) / motifLocalcoord(0))) * 1,
+							(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (motifViewport43(2) / motifLocalcoord(0))) * 1,
 							false
 						)
 						main.f_animPosDraw(
@@ -428,8 +430,8 @@ function start.f_selectScreen()
 						local t = newGrid[charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]][charsInRow[charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]][hoverCharacters[side][charsRows[((start.c[side].trueY + n - 1) % numberOfRows) + 1]]]]
 						animSetScale(
 							start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
-							(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
-							(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
+							(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (motifViewport43(2) / motifLocalcoord(0))) * 1,
+							(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (motifViewport43(2) / motifLocalcoord(0))) * 1,
 							false
 						)
 						main.f_animPosDraw(
@@ -501,8 +503,8 @@ function start.f_selectScreen()
 							local t = newGrid[start.c[side].selY + 1][charsInRow[start.c[side].selY + 1][((start.c[side].trueX + n - 1) % charsPerRow[start.c[side].selY + 1]) + 1]]
 							animSetScale(
 								start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
-								(motif.select_info.portrait_scale[1] * ((start.f_getCharData(t.char_ref).portrait_scale or 1) or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
-								(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
+								(motif.select_info.portrait_scale[1] * ((start.f_getCharData(t.char_ref).portrait_scale or 1) or 1) / (motifViewport43(2) / motifLocalcoord(0))) * 1,
+								(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (motifViewport43(2) / motifLocalcoord(0))) * 1,
 								false
 							)
 							main.f_animPosDraw(
@@ -524,8 +526,8 @@ function start.f_selectScreen()
 							local t = newGrid[start.c[side].selY + 1][charsInRow[start.c[side].selY + 1][((start.c[side].trueX - n - 1) % charsPerRow[start.c[side].selY + 1]) + 1]]
 							animSetScale(
 								start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
-								(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
-								(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * 1,
+								(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (motifViewport43(2) / motifLocalcoord(0))) * 1,
+								(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (motifViewport43(2) / motifLocalcoord(0))) * 1,
 								false
 							)
 							main.f_animPosDraw(
@@ -567,8 +569,8 @@ function start.f_selectScreen()
 					local t = newGrid[start.c[side].selY + 1][start.c[side].selX + 1]
 					animSetScale(
 						start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
-						(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * scaleToUse[1],
-						(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])) * scaleToUse[2],
+						(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (motifViewport43(2) / motifLocalcoord(0))) * scaleToUse[1],
+						(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (motifViewport43(2) / motifLocalcoord(0))) * scaleToUse[2],
 						false
 					)
 					main.f_animPosDraw(
@@ -579,8 +581,8 @@ function start.f_selectScreen()
 					)	
 					animSetScale(
 						start.f_getCharData(t.char_ref).cell_data or motif.select_info.cell_random_data,
-						(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])),
-						(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (main.SP_Viewport43[3] / main.SP_Localcoord[1])),
+						(motif.select_info.portrait_scale[1] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (motifViewport43(2) / motifLocalcoord(0))),
+						(motif.select_info.portrait_scale[2] * (start.f_getCharData(t.char_ref).portrait_scale or 1) / (motifViewport43(2) / motifLocalcoord(0))),
 						false
 					)
 					
@@ -1089,9 +1091,11 @@ function start.f_selectMenu(side, cmd, player, member, selectState)
 			end
 		--selection menu
 		elseif selectState == 1 then
-			--TODO: hook left for optional menu that shows up after selecting character (groove, palette selection etc.)
-			--once everything is ready set selectState to 3 to confirm character selection
-			selectState = 3
+			if motif.select_info.paletteselect and motif.select_info.paletteselect > 0 then
+				selectState = start.f_palMenu(side, cmd, player, member, selectState)
+			else
+				selectState = 3
+			end
 		--confirm selection
 		elseif selectState == 3 then
 			start.p[side].t_selected[member] = {
