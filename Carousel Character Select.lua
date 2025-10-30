@@ -1287,22 +1287,6 @@ function start.f_selectReset(hardReset)
 	setConsecutiveWins(2, 0)
 	setContinue(false)
 	main.f_cmdInput()
-	local col = 1
-	local row = 1
-	for i = 1, #main.t_selGrid do
-		if i > motif.select_info.columns * row then
-			row = row + 1
-			col = 1
-		end
-		if main.t_selGrid[i].slot ~= 1 then
-			main.t_selGrid[i].slot = 1
-			newGrid[row][col].char = start.f_selGrid(i).char
-			newGrid[row][col].char_ref = start.f_selGrid(i).char_ref
-			newGrid[row][col].hidden = start.f_selGrid(i).hidden
-			newGrid[row][col].skip = start.f_selGrid(i).skip
-		end
-		col = col + 1
-	end
 	if hardReset then
 		stageListNo = 0
 		restoreCursor = false
