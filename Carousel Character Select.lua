@@ -1,6 +1,18 @@
 enableCharacterSelect = true
 enableStageSelect = false
 
+--Set stages per row here
+if enableStageSelect == true then
+	NumStages = {}
+	NumStages[1] = 5
+	NumStages[2] = 1
+	--NumStages[3] = 4
+	--NumStages[4] = 4
+	--NumStages[4] = 3
+	--NumStages[5] = 3
+	--NumStages[6] = 3
+end
+
 if enableCharacterSelect == true then
 	function charSelectInitalize() 
 		directions = {}
@@ -433,14 +445,6 @@ if enableStageSelect == true then
 	motif.select_info.stage_portrait_bg_data = nil
 	txt_selStage = main.f_createTextImg(motif.select_info, 'stage_active')
 	stageActiveType = 'stage_active'
-	NumStages = {}
-	NumStages[1] = 5
-	NumStages[2] = 1
-	--NumStages[3] = 4
-	--NumStages[4] = 4
-	--NumStages[4] = 3
-	--NumStages[5] = 3
-	--NumStages[6] = 3
 	StartNumbers = {}
 	hoverStages = {}
 	x = 0
@@ -612,6 +616,22 @@ if enableStageSelect == true then
 			t = t:gsub('%%s', main.t_selStages[main.t_selectableStages[stageListNo]].name)
 			for i, c in ipairs(main.f_strsplit('\\n', t)) do --split string using "\n" delimiter
 				t_txt[i] = c
+			end
+		end
+		if not stageEnd then
+			if main.f_input(main.t_players, {'pal', 's'}) or timerSelect == -1 then
+				sndPlay(motif.files.snd_data, motif.select_info.stage_done_snd[1], motif.select_info.stage_done_snd[2])
+				stageActiveType = 'stage_done'
+				stageEnd = true
+			elseif stageActiveCount < motif.select_info.stage_active_switchtime then --delay change
+				stageActiveCount = stageActiveCount + 1
+			else
+				if stageActiveType == 'stage_active' then
+					stageActiveType = 'stage_active2'
+				else
+					stageActiveType = 'stage_active'
+				end
+				stageActiveCount = 0
 			end
 		end
 		for i = 1, #t_txt do
