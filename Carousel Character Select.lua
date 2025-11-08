@@ -445,6 +445,7 @@ if enableStageSelect == true then
 	motif.select_info.stage_portrait_bg_data = nil
 	txt_selStage = main.f_createTextImg(motif.select_info, 'stage_active')
 	stageActiveType = 'stage_active'
+	stageActiveCount = 0
 	StartNumbers = {}
 	hoverStages = {}
 	x = 0
