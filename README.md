@@ -6,9 +6,8 @@ p#.fp.main.pos = x, y ;Sets where the character the player is currently hovering
 
 # Optional Paramaters
 ```
-p#.fp.scale = x,y;Sets how large the currently hovered character should be shown relative to regular size, defaults to 1,1
+p#.fp.scale = x,y;Sets how large the currently hovered character should be shown relative to regular size, defaults to 1,1 (This function is currently not working in the latest verison)
 p#.fp.cursor = (1 or 0); Enables a cursor to be show on top of the hovering character, defaults to 1
-p#.fp.cursor = (1 or 0); Sets if the cursor should scale with the main portrait, defaults to 1
 ```
 ```
 p#.fp.down = #;Sets how many characters below the main one should be shown, defaults to 0
@@ -37,8 +36,8 @@ p#.fp.slide.cursor = (1 or 0);Enables the cursor to slide with the currently hov
 hideoncompleteselection = (1 or 0);Whether to hide the character cells after all characters have been selected, defaults to 1
 ```
 # Stage Paramaters
-The stage carousel has to be enabled in lua. On line 1, change enableStageCarousel to true.
-Then in the following section, each part of NumStages describes how many stages are in each row. All stages a row must be placed beside each other in order. For instance if the first row were to have 5 stages, add NumStages[1] = 5, if the second row were to have 20 stages add, NumStages[2] = 20.
+The stage carousel has to be enabled in lua. On line 2, change enableStageSelect to true.
+Then in the  section, each part of NumStages describes how many stages are in each row. All stages a row must be placed beside each other in order. For instance if the first row were to have 5 stages, add NumStages[1] = 5, if the second row were to have 20 stages add, NumStages[2] = 20.
 
 # Optional Paramaters
 ```
